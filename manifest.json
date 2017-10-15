@@ -1,0 +1,21 @@
+{
+  "name": "Live data captures",
+  "description": "Displays the live log with any http requests headers without a popup window",
+  "version": "0.1",
+  "permissions": [
+    "tabs",
+    "debugger"
+  ],
+  "background": {
+    "scripts": [
+      "background.js",
+      "pageLoadTime.js"
+    ]
+  },
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_title": "Live Data captures"
+  },
+  "manifest_version": 2
+}
+
