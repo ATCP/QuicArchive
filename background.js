@@ -23,6 +23,7 @@ function bootstrap(tabs) {
 
         if (url.substring(0, 5) == 'https' || url.substring(0, 4) == 'http') {
             tabUrls[tabs[i].id] = url;
+
             chrome.debugger.attach({tabId: tabs[i].id}, version, null);
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.enable");
             chrome.debugger.onEvent.addListener(onEvent);
