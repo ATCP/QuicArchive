@@ -5,9 +5,11 @@ var queryInfo = {
     currentWindow: true
 };
 
+
 var socket = new WebSocket('ws://127.0.0.1:1337');
 
 var tabUrls = {};
+var logs = {};
 
 function bootstrap(tabs) {
     console.log(tabs.length);
@@ -25,10 +27,15 @@ function bootstrap(tabs) {
             tabUrls[tabs[i].id] = url;
             chrome.debugger.attach({tabId: tabs[i].id}, version, null);
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.enable");
+            chrome.debugger.sendCommand({tabId: tabs[i].id}, "Page.enable");
+            chrome.debugger.sendCommand({tabId: tabs[i].id}, "DOM.enable");
+
             chrome.debugger.onEvent.addListener(onEvent);
+
+            createHar(tabs[i]);
+
         }
     }
-
 
 }
 
@@ -55,17 +62,18 @@ var resourceTime = {};
 
 function onEvent(debuggeeId, message, params) {
 
-    if (message == "Network.requestWillBeSent") {
+    if (message == "DOM.documentUpdated") {
+    }
+    else if (message == "Network.requestWillBeSent") {
         var requestDiv = requests[params.requestId];
 
         if (!requestDiv) {
             var requestDiv = document.createElement("div");
-            requestDiv.className = "request";
+            requestDiv.className = "request-" + params.requestId;
             requests[params.requestId] = requestDiv;
             //var urlLine = document.createElement("div");
             //urlLine.textContent = params.request.url;
             //requestDiv.appendChild(urlLine);
-
 
             requestInfo[params.requestId] = {
                 id: 0,
@@ -111,12 +119,10 @@ function onEvent(debuggeeId, message, params) {
 
         if (params.redirectResponse) {
             var resp = document.createElement("div");
-            resp.textContent = "redirectResponse";
+            resp.textContent = "redirect";
             requestDiv.appendChild(resp.textContent);
             appendResponse(params.requestId, params.redirectResponse);
         }
-
-
 
         var requestLine = document.createElement("div");
         requestLine.textContent = "\n" + params.request.method + ' ' + parseURL(params.request.url).host + ' ' + params.type;
@@ -124,32 +130,37 @@ function onEvent(debuggeeId, message, params) {
         requestDiv.appendChild(requestLine);
         requestDiv.appendChild(formatHeaders(params.request.headers));
         document.getElementById("container").appendChild(requestDiv);
-
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' ---Request will be sent\n');
-
+        console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
         updateRequestSent(params);
 
     }
     else if (message == "Network.responseReceived") {
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' ---Response received: content length: ' + params.response.headers['content-length'] + ' ' + params.type);
+        console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
         appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
     }
     else if (message == "Network.dataReceived") {
         if (requests[params.requestId]) {
-            console.log(debuggeeId.tabId + ' ' + params.requestId + ' ---Data received: ' + params.dataLength + ' ---EncodedDataLength: ' + params.encodedDataLength + '\n');
+            console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength + ' EncodedDataLength: ' + params.encodedDataLength + '\n');
             updateDataRcv(params);
         } else {
             console.error('request id not found!');
         }
     }
     else if (message == "Network.loadingFinished") {
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' ---loadingFinished. total bytes received; ' + params.encodedDataLength + '\n');
+        console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFinished. total bytes received; ' + params.encodedDataLength + '\n');
         updateFinLoad(params);
     }
     else if (message == "Network.loadingFailed") {
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' ---loadingFailed\n');
+        console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
     }
+    else if (message == "Page.loadEventFired") {
+        console.log('loadEvent: ' + params.timestamp);
+    }
+    else if (message == "Page.domContentEventFired") {
+        console.log('domContent: ' + params.timestamp);
+    }
+
 }
 
 
@@ -160,6 +171,11 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].method = params.request.method;
     requestInfo[params.requestId].dup += 1;
     requestInfo[params.requestId].url = parseURL(params.request.url).origin;
+
+    if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl].pages.startedDateTime) {
+        updateHarDateTime(logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl], params.timestamp);
+    }
+
 }
 
 function updateResponseRcv(params) {
@@ -207,12 +223,12 @@ function updateFinLoad(params) {
 
     var requestDiv = requests[params.requestId];
     requestDiv.appendChild(formatHeaders(requestDiv[params.requestId]));
-    console.dir(requestInfo[params.requestId]);
+    //console.dir(requestInfo[params.requestId]);
     requestInfo[params.requestId].dup -- ;
 
     if (requestInfo[params.requestId].dup <= 0) {
-        console.log('send request info\n');
-        console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
+        //console.log('send request info\n');
+        //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
         socket.send(JSON.stringify(requestInfo[params.requestId]));
 
     }
@@ -222,9 +238,10 @@ function updateFinLoad(params) {
 function appendResponse(requestId, response) {
     var requestDiv = requests[requestId];
     //requestDiv.appendChild(formatHeaders(response.requestHeaders));
-
     var statusLine = document.createElement("div");
+
     statusLine.textContent = "\n" + response.protocol + ' ' + response.status + ' ' + response.statusText + ' ' + response.encodedDataLength.toString() + ' ' + response.connectionId.toString() + '\n';
+
     requestDiv.appendChild(statusLine);
     requestDiv.appendChild(formatHeaders(response.headers));
 
