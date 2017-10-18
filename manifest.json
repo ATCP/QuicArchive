@@ -4,12 +4,15 @@
   "version": "0.1",
   "permissions": [
     "tabs",
-    "debugger"
+    "debugger",
+    "webRequest",
+    "*://*/*"
   ],
   "background": {
     "scripts": [
-      "background.js",
-      "har.js"
+      "har.js",
+      "webRequests.js",
+      "background.js"
     ]
   },
   "browser_action": {

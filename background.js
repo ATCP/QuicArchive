@@ -9,7 +9,6 @@ var queryInfo = {
 var socket = new WebSocket('ws://127.0.0.1:1337');
 
 var tabUrls = {};
-var logs = {};
 
 function bootstrap(tabs) {
     console.log(tabs.length);
@@ -32,7 +31,7 @@ function bootstrap(tabs) {
 
             chrome.debugger.onEvent.addListener(onEvent);
 
-            createHar(tabs[i]);
+            createExistTabHar(tabs[i].id, url);
 
         }
     }
@@ -160,7 +159,6 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Page.domContentEventFired") {
         console.log('domContent: ' + params.timestamp);
     }
-
 }
 
 
@@ -172,10 +170,11 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].dup += 1;
     requestInfo[params.requestId].url = parseURL(params.request.url).origin;
 
+    createEntry(params.requestId);
+
     if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl].pages.startedDateTime) {
         updateHarDateTime(logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl], params.timestamp);
     }
-
 }
 
 function updateResponseRcv(params) {

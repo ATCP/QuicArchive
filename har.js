@@ -14,33 +14,76 @@ if (!Date.prototype.toISOString) {
     }
 }
 
+var logs = {};
+var entries = {};
 
-
-function createLog(request, response, resource) {
-    // Exclude Data URI from HAR file because
-    // they aren't included in specification
-    if (request.url.match(/(^data:image\/.*)/i)) {
-
-        console.log('exclude data URI from HAR');
-        return;
-    }
-
-    return {
-        log: {
-            version: '1.2',
-            creator: {
-                name: "quicArchive",
-                version: 1.0
-            },
-            pages: [{
-                startedDateTime: startTime.toISOString(),
-                id: address,
-                title: title,
-                pageTimings: {
-                    onLoad: page.endTime - page.startTime
-                }
-            }],
-            entries: entries
-        }
+function createExistTabHar(tabId, tabUrl) {
+    logs[tabId + tabUrl] = {
+        version: '1.2',
+        creator: {
+            name: "quicArchive",
+            version: 1.0
+        },
+        pages: [{
+            startedDateTime: (new Date()).toISOString(),
+            id: tabUrl,
+            title: tabUrl,
+            pageTimings: {
+                onConetentLoad: -1,
+                onLoad: -1
+            }
+        }],
+        entries: []
     };
+}
+
+function createEntry(requestId) {
+    entries[requestId] = {
+        startedDateTime: (new Date(requestInfo[requestId].timestamp)).toISOString(),
+        time: 0,
+        request: {
+            method: request.method,
+            url: request.url,
+            httpVersion: "HTTP/1.1",
+            cookies: [],
+            headers: request.headers,
+            queryString: [],
+            headersSize: -1,
+            bodySize: -1
+        },
+        response: {
+            status: endReply.status,
+            statusText: endReply.statusText,
+            httpVersion: "HTTP/1.1",
+            cookies: [],
+            headers: endReply.headers,
+            redirectURL: "",
+            headersSize: -1,
+            bodySize: startReply.bodySize,
+            content: {
+                size: startReply.bodySize,
+                mimeType: endReply.contentType
+            }
+        },
+        cache: {},
+        timings: {
+            blocked: 0,
+            dns: -1,
+            connect: -1,
+            send: 0,
+            wait: startReply.time - request.time,
+            receive: endReply.time - startReply.time,
+            ssl: -1
+        },
+        pageref: address
+    };
+}
+
+function updateHarDateTime(log, firstRequestTime) {
+    var t = new Date(firstRequestTime);
+    log.pages.startedDateTime = t.toISOString();
+}
+
+function updateEntry(log) {
+
 }
