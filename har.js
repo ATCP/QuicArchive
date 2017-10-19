@@ -37,53 +37,74 @@ function createExistTabHar(tabId, tabUrl) {
     };
 }
 
-function createEntry(requestId) {
+function updateEntryRequest(requestId) {
+
     entries[requestId] = {
-        startedDateTime: (new Date(requestInfo[requestId].timestamp)).toISOString(),
+        pageref: logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].pages.id,
+        startedDateTime: (new Date(requestInfo[requestId].requestTime)).toISOString(),
         time: 0,
         request: {
-            method: request.method,
-            url: request.url,
-            httpVersion: "HTTP/1.1",
+            method: requestInfo[requestId].method,
+            url: requestInfo[requestId].url,
+            httpVersion: "",
             cookies: [],
-            headers: request.headers,
+            headers: requestInfo[requestId].requestHeaders,
             queryString: [],
             headersSize: -1,
             bodySize: -1
         },
-        response: {
-            status: endReply.status,
-            statusText: endReply.statusText,
-            httpVersion: "HTTP/1.1",
-            cookies: [],
-            headers: endReply.headers,
-            redirectURL: "",
-            headersSize: -1,
-            bodySize: startReply.bodySize,
-            content: {
-                size: startReply.bodySize,
-                mimeType: endReply.contentType
-            }
-        },
+        response: {},
         cache: {},
         timings: {
             blocked: 0,
             dns: -1,
             connect: -1,
             send: 0,
-            wait: startReply.time - request.time,
-            receive: endReply.time - startReply.time,
+            wait: 0,
+            receive: 0,
             ssl: -1
         },
-        pageref: address
+        serverIPAddress: "",
+        connection: ""
     };
 }
 
-function updateHarDateTime(log, firstRequestTime) {
-    var t = new Date(firstRequestTime);
-    log.pages.startedDateTime = t.toISOString();
+function updateEntryResponse(params) {
+    var requestId = params.requestId;
+
+    entries[requestId].request.httpVersion = requestInfo[requestId].proto;
+    entries[requestId].response = {
+        status: params.response.status,
+        statusText: params.response.statusText,
+        httpVersion: prequestInfo[requestId].proto,
+        cookies: [],
+        headers: requestInfo[requestId].responseHeaders,
+        redirectURL: "",
+        headersSize: -1,
+        bodySize: requestInfo[requestId].contentLen,
+        content: {
+            size: requestInfo[requestId].contentLen,
+            mimeType: requestInfo[requestId].responseHeaders['content-type']
+        }
+    };
+    entries[requestId].cache = {};
+    entries[requestId].timings = {
+        blocked: resourceTime[requestId].dnsStart,
+        dns: resourceTime[requestId].dnsEnd - resourceTime[requestId].dnsStart,
+        connect: resourceTime[requestId].connectEnd - resourcetTime[requestId].connectStart,
+        send: resourceTime[requestId].sendEnd - resourceTime[requesstId].sendStart,
+        wait: resourceTime[requestId].receiveHeadersEnd - resourceTime[requestId].sendEnd,
+        receive: 0,
+        ssl: reourceTime[requestId].sslEnd - resourceTime[requestId].sslStart
+    };
+
+    entries[requestId].serverIPAddress = requestInfo[requestId].remoteIPAddr;
+    entries[requestId].connection = requestInfo[requestId].connId;
 }
 
-function updateEntry(log) {
+function updateEntryLoad(requestId) {
+    entries[requestId].time = requestInfo[requestId].loadingTimes - requestInfo[requestId].requestTime;
+    entries[requestId].timings.recceive = requestInfo[requestInfo].loadingTime - requestInfo[requestId].responseTime;
 
 }
+

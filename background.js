@@ -62,6 +62,7 @@ var resourceTime = {};
 function onEvent(debuggeeId, message, params) {
 
     if (message == "DOM.documentUpdated") {
+
     }
     else if (message == "Network.requestWillBeSent") {
         var requestDiv = requests[params.requestId];
@@ -93,9 +94,10 @@ function onEvent(debuggeeId, message, params) {
                 requestTime: [],
                 responseTime: [],
                 loadingTime: [],
-                objLoadTime: []
+                objLoadTime: [],
+                requestHeaders: [],
+                responseHeaders: []
             };
-
             resourceTime[params.requestId] = {
                 requestTime: [],
                 proxyStart: [],
@@ -127,6 +129,7 @@ function onEvent(debuggeeId, message, params) {
         requestLine.textContent = "\n" + params.request.method + ' ' + parseURL(params.request.url).host + ' ' + params.type;
 
         requestDiv.appendChild(requestLine);
+
         requestDiv.appendChild(formatHeaders(params.request.headers));
         document.getElementById("container").appendChild(requestDiv);
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
@@ -136,6 +139,7 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Network.responseReceived") {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
         appendResponse(params.requestId, params.response);
+
         updateResponseRcv(params);
     }
     else if (message == "Network.dataReceived") {
@@ -169,12 +173,16 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].method = params.request.method;
     requestInfo[params.requestId].dup += 1;
     requestInfo[params.requestId].url = parseURL(params.request.url).origin;
+    requestInfo[params.requestId].requestHeaders = params.request.headers;
 
-    createEntry(params.requestId);
+    if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl])
+        createExistTabHar(params.requestId);
 
-    if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl].pages.startedDateTime) {
+    updateEntryRequest(params.requestId);
+
+    /*if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl].pages.startedDateTime) {
         updateHarDateTime(logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl], params.timestamp);
-    }
+    }*/
 }
 
 function updateResponseRcv(params) {
@@ -185,6 +193,8 @@ function updateResponseRcv(params) {
     requestInfo[params.requestId].remotePort = params.response.remotePort;
     requestInfo[params.requestId].contentLen += parseInt(params.response.headers['content-length'], 10);
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
+
+    reqjestInfo[params.requestId].responseHeaders = params.response.headers;
 
     resourceTime[params.requestId].requestTime.push(params.response.timing.requestTime);
     resourceTime[params.requestId].proxyStart.push(params.response.timing.proxyStart);
@@ -203,6 +213,7 @@ function updateResponseRcv(params) {
     resourceTime[params.requestId].pushEnd.push(params.response.timing.pushEnd);
     resourceTime[params.requestId].receiveHeadersEnd.push(params.response.timing.receiveHeadersEnd);
 
+    updateEntryResponse(params);
     //console.dir(resourceTime[params.requestId]);
 }
 
@@ -214,6 +225,7 @@ function updateDataRcv(params) {
 
     requestInfo[params.requestId].totalEncodedDataLength += params.encodedDataLength;
     requestInfo[params.requestId].totalDataLength += params.dataLength;
+
 }
 
 function updateFinLoad(params) {
@@ -225,11 +237,12 @@ function updateFinLoad(params) {
     //console.dir(requestInfo[params.requestId]);
     requestInfo[params.requestId].dup -- ;
 
+    updateEntryLoad(params.requestId);
+
     if (requestInfo[params.requestId].dup <= 0) {
-        //console.log('send request info\n');
+
         //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
         socket.send(JSON.stringify(requestInfo[params.requestId]));
-
     }
 }
 
