@@ -17,8 +17,8 @@ if (!Date.prototype.toISOString) {
 var logs = {};
 var entries = {};
 
-function createExistTabHar(tabId, tabUrl) {
-    logs[tabId + tabUrl] = {
+function createExistTabHar(id, url) {
+    logs[id + url] = {
         version: '1.2',
         creator: {
             name: "quicArchive",
@@ -26,8 +26,8 @@ function createExistTabHar(tabId, tabUrl) {
         },
         pages: [{
             startedDateTime: (new Date()).toISOString(),
-            id: tabUrl,
-            title: tabUrl,
+            id: url,
+            title: url,
             pageTimings: {
                 onConetentLoad: -1,
                 onLoad: -1
@@ -38,6 +38,8 @@ function createExistTabHar(tabId, tabUrl) {
 }
 
 function updateEntryRequest(requestId) {
+
+    console.log(logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].pages.id);
 
     entries[requestId] = {
         pageref: logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].pages.id,
@@ -76,7 +78,7 @@ function updateEntryResponse(params) {
     entries[requestId].response = {
         status: params.response.status,
         statusText: params.response.statusText,
-        httpVersion: prequestInfo[requestId].proto,
+        httpVersion: requestInfo[requestId].proto,
         cookies: [],
         headers: requestInfo[requestId].responseHeaders,
         redirectURL: "",
@@ -89,13 +91,13 @@ function updateEntryResponse(params) {
     };
     entries[requestId].cache = {};
     entries[requestId].timings = {
-        blocked: resourceTime[requestId].dnsStart,
+        blocked: resourceTime[requestId].proxyEnd,
         dns: resourceTime[requestId].dnsEnd - resourceTime[requestId].dnsStart,
-        connect: resourceTime[requestId].connectEnd - resourcetTime[requestId].connectStart,
-        send: resourceTime[requestId].sendEnd - resourceTime[requesstId].sendStart,
+        connect: resourceTime[requestId].connectEnd - resourceTime[requestId].connectStart,
+        send: resourceTime[requestId].sendEnd - resourceTime[requestId].sendStart,
         wait: resourceTime[requestId].receiveHeadersEnd - resourceTime[requestId].sendEnd,
         receive: 0,
-        ssl: reourceTime[requestId].sslEnd - resourceTime[requestId].sslStart
+        ssl: resourceTime[requestId].sslEnd - resourceTime[requestId].sslStart
     };
 
     entries[requestId].serverIPAddress = requestInfo[requestId].remoteIPAddr;
@@ -103,8 +105,10 @@ function updateEntryResponse(params) {
 }
 
 function updateEntryLoad(requestId) {
-    entries[requestId].time = requestInfo[requestId].loadingTimes - requestInfo[requestId].requestTime;
-    entries[requestId].timings.recceive = requestInfo[requestInfo].loadingTime - requestInfo[requestId].responseTime;
+    entries[requestId].time = requestInfo[requestId].loadingTime - requestInfo[requestId].requestTime;
+    entries[requestId].timings.receive = requestInfo[requestId].loadingTime - requestInfo[requestId].responseTime;
 
+    logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries.push(entries[requestId]);
+    console.dir(logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl]);
 }
 
