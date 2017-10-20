@@ -31,7 +31,7 @@ function bootstrap(tabs) {
 
             chrome.debugger.onEvent.addListener(onEvent);
 
-            createExistTabHar(tabs[i].id, url);
+            createExistPage(tabs[i].id, url);
 
         }
     }
@@ -91,30 +91,30 @@ function onEvent(debuggeeId, message, params) {
                 remotePort: 0,
                 contentLen: 0,
                 encodedDataBytesFinLoad: 0,
-                requestTime: [],
-                responseTime: [],
-                loadingTime: [],
-                objLoadTime: [],
-                requestHeaders: [],
-                responseHeaders: []
+                requestTime: 0,
+                responseTime: 0,
+                loadingTime: 0,
+                objLoadTime: 0,
+                requestHeaders: 0,
+                responseHeaders: 0
             };
             resourceTime[params.requestId] = {
-                requestTime: [],
-                proxyStart: [],
-                proxyEnd: [],
-                dnsStart: [],
-                dnsEnd: [],
-                connectStart: [],
-                connectEnd: [],
-                sslStart: [],
-                sslEnd: [],
-                workerStart: [],
-                workerReady: [],
-                sendStart: [],
-                sendEnd: [],
-                pushStart: [],
-                pushEnd: [],
-                receiveHeadersEnd: []
+                requestTime: 0,
+                proxyStart: 0,
+                proxyEnd: 0,
+                dnsStart: 0,
+                dnsEnd: 0,
+                connectStart: 0,
+                connectEnd: 0,
+                sslStart: 0,
+                sslEnd: 0,
+                workerStart: 0,
+                workerReady: 0,
+                sendStart: 0,
+                sendEnd: 0,
+                pushStart: 0,
+                pushEnd: 0,
+                receiveHeadersEnd: 0
             };
         }
 
@@ -138,6 +138,7 @@ function onEvent(debuggeeId, message, params) {
     }
     else if (message == "Network.responseReceived") {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
+
         appendResponse(params.requestId, params.response);
 
         updateResponseRcv(params);
@@ -145,7 +146,9 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Network.dataReceived") {
         if (requests[params.requestId]) {
             console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength + ' EncodedDataLength: ' + params.encodedDataLength + '\n');
+
             updateDataRcv(params);
+
         } else {
             console.error('request id not found!');
         }
@@ -167,16 +170,18 @@ function onEvent(debuggeeId, message, params) {
 
 
 function updateRequestSent(params) {
-    requestInfo[params.requestId].requestTime.push(params.timestamp);
+    if (!requestInfo[params.requestId].requestTime)
+        requestInfo[params.requestId].requestTime = params.timestamp;
+
     requestInfo[params.requestId].id = params.requestId;
     requestInfo[params.requestId].type = params.type;
     requestInfo[params.requestId].method = params.request.method;
     requestInfo[params.requestId].dup += 1;
-    requestInfo[params.requestId].url = parseURL(params.request.url).origin;
+    requestInfo[params.requestId].url = params.request.url;
     requestInfo[params.requestId].requestHeaders = params.request.headers;
 
     if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl])
-        createExistTabHar(params.requestId);
+        createExistPage(params.requestId);
 
     updateEntryRequest(params.requestId);
 
@@ -186,34 +191,35 @@ function updateRequestSent(params) {
 }
 
 function updateResponseRcv(params) {
-    requestInfo[params.requestId].responseTime.push(params.timestamp);
+    requestInfo[params.requestId].responseTime = params.timestamp;
+
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;
     requestInfo[params.requestId].remoteIPAddr = params.response.remoteIPAddr;
     requestInfo[params.requestId].remotePort = params.response.remotePort;
-    requestInfo[params.requestId].contentLen += parseInt(params.response.headers['content-length'], 10);
+    requestInfo[params.requestId].contentLen = parseInt(params.response.headers['content-length'], 10);
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
 
-    reqjestInfo[params.requestId].responseHeaders = params.response.headers;
+    requestInfo[params.requestId].responseHeaders = params.response.headers;
 
-    resourceTime[params.requestId].requestTime.push(params.response.timing.requestTime);
-    resourceTime[params.requestId].proxyStart.push(params.response.timing.proxyStart);
-    resourceTime[params.requestId].proxyEnd.push(params.response.timing.proxyEnd);
-    resourceTime[params.requestId].dnsStart.push(params.response.timing.dnsStart);
-    resourceTime[params.requestId].dnsEnd.push(params.response.timing.dnsEnd);
-    resourceTime[params.requestId].connectStart.push(params.response.timing.connectStart);
-    resourceTime[params.requestId].connectEnd.push(params.response.timing.connectEnd);
-    resourceTime[params.requestId].sslStart.push(params.response.timing.sslStart);
-    resourceTime[params.requestId].sslEnd.push(params.response.timing.sslEnd);
-    resourceTime[params.requestId].workerStart.push(params.response.timing.workerStart);
-    resourceTime[params.requestId].workerReady.push(params.response.timing.workerReady);
-    resourceTime[params.requestId].sendStart.push(params.response.timing.sendStart);
-    resourceTime[params.requestId].sendEnd.push(params.response.timing.sendEnd);
-    resourceTime[params.requestId].pushStart.push(params.response.timing.pushStart);
-    resourceTime[params.requestId].pushEnd.push(params.response.timing.pushEnd);
-    resourceTime[params.requestId].receiveHeadersEnd.push(params.response.timing.receiveHeadersEnd);
+    resourceTime[params.requestId].requestTime = params.response.timing.requestTime;
+    resourceTime[params.requestId].proxyStart = params.response.timing.proxyStart;
+    resourceTime[params.requestId].proxyEnd = params.response.timing.proxyEnd;
+    resourceTime[params.requestId].dnsStart = params.response.timing.dnsStart;
+    resourceTime[params.requestId].dnsEnd = params.response.timing.dnsEnd;
+    resourceTime[params.requestId].connectStart = params.response.timing.connectStart;
+    resourceTime[params.requestId].connectEnd = params.response.timing.connectEnd;
+    resourceTime[params.requestId].sslStart = params.response.timing.sslStart;
+    resourceTime[params.requestId].sslEnd = params.response.timing.sslEnd;
+    resourceTime[params.requestId].workerStart = params.response.timing.workerStart;
+    resourceTime[params.requestId].workerReady = params.response.timing.workerReady;
+    resourceTime[params.requestId].sendStart = params.response.timing.sendStart;
+    resourceTime[params.requestId].sendEnd = params.response.timing.sendEnd;
+    resourceTime[params.requestId].pushStart = params.response.timing.pushStart;
+    resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
+    resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
 
-    updateEntryResponse(params);
+    updateEntryResponse(params, params.requestId);
     //console.dir(resourceTime[params.requestId]);
 }
 
@@ -229,13 +235,15 @@ function updateDataRcv(params) {
 }
 
 function updateFinLoad(params) {
-    requestInfo[params.requestId].loadingTime.push(params.timestamp);
+    requestInfo[params.requestId].loadingTime = params.timestamp;
     requestInfo[params.requestId].encodedDataBytesFinLoad = params.encodedDataLength;
+    requestInfo[params.requestId].dup -- ;
 
     var requestDiv = requests[params.requestId];
-    requestDiv.appendChild(formatHeaders(requestDiv[params.requestId]));
-    //console.dir(requestInfo[params.requestId]);
-    requestInfo[params.requestId].dup -- ;
+    var finLoad = document.createElement("div");
+    finLoad.statusText = 'finish Load';
+    requestDiv.appendChild(finLoad);
+    requestDiv.appendChild(formatHeaders(requestInfo[params.requestId]));
 
     updateEntryLoad(params.requestId);
 
