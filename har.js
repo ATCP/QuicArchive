@@ -141,6 +141,8 @@ function updateEntryLoad(requestId) {
         entry.timings.receive = requestInfo[requestId].loadingTime - requestInfo[requestId].responseTime;
 
         console.dir(logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl]);
+    } else {
+        
     }
 }
 

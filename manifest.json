@@ -12,6 +12,8 @@
     "scripts": [
       "har.js",
       "webRequests.js",
+      "requestInfo.js",
+      "tabs.js",
       "background.js"
     ]
   },
