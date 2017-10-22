@@ -8,7 +8,7 @@ var queryInfo = {
 
 var socket = new WebSocket('ws://127.0.0.1:1337');
 
-var tabUrls = {};
+var currentTabs = {};
 
 function bootstrap(tabs) {
     console.log(tabs.length);
@@ -23,7 +23,13 @@ function bootstrap(tabs) {
         console.assert(typeof url == 'string', 'tab.url should be a string');
 
         if (url.substring(0, 5) == 'https' || url.substring(0, 4) == 'http') {
-            tabUrls[tabs[i].id] = url;
+
+            currentTabs[tabs[i].id] = {
+                url: tabs[i].url,
+                title: tabs[i].title,
+                status: tabs[i].status
+            };
+
             chrome.debugger.attach({tabId: tabs[i].id}, version, null);
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Page.enable");
@@ -35,6 +41,8 @@ function bootstrap(tabs) {
 
         }
     }
+
+
 
 }
 
@@ -70,6 +78,7 @@ function onEvent(debuggeeId, message, params) {
             var requestDiv = document.createElement("div");
             requestDiv.className = "request-" + params.requestId;
             requests[params.requestId] = requestDiv;
+            
             //var urlLine = document.createElement("div");
             //urlLine.textContent = params.request.url;
             //requestDiv.appendChild(urlLine);
@@ -79,9 +88,9 @@ function onEvent(debuggeeId, message, params) {
         }
 
         if (params.redirectResponse) {
-            var resp = document.createElement("div");
-            resp.textContent = "redirect";
-            requestDiv.appendChild(resp.textContent);
+            var redirectRes = document.createElement("div");
+            redirectRes.textContent = "redirect";
+            requestDiv.appendChild(redirectRes);
             appendResponse(params.requestId, params.redirectResponse);
         }
 
@@ -96,8 +105,8 @@ function onEvent(debuggeeId, message, params) {
 
         updateRequestSent(params);
 
-        if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl]) {
-            createExistPage(params.requestId);
+        if (!logs[requestInfo[params.requestId].tabId]) {
+            createPageOnBoot(params.requestId);
         }
 
         updateEntryRequest(params.requestId);
@@ -109,6 +118,7 @@ function onEvent(debuggeeId, message, params) {
         appendResponse(params.requestId, params.response);
 
         updateResponseRcv(params);
+
         updateEntryResponse(params, params.requestId);
     }
     else if (message == "Network.dataReceived") {

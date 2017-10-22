@@ -9,7 +9,7 @@ function createRequestInfo(debuggeeId, params) {
         dup: 0,
         method: 0,
         url: 0,
-        tabUrl: tabUrls[debuggeeId.tabId],
+        tabUrl: currentTabs[debuggeeId.tabId].url,
         totalDataLength: 0,
         totalEncodedDataLength: 0,
         type: 0,

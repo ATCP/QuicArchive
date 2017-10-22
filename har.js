@@ -17,8 +17,9 @@ if (!Date.prototype.toISOString) {
 var logs = {};
 var entries = {};
 
-function createExistPage(id, url) {
-    logs[id + url] = {
+
+function createPageOnBoot(id, url) {
+    logs[id] = {
         version: '1.2',
         creator: {
             name: "quicArchive",
@@ -26,21 +27,62 @@ function createExistPage(id, url) {
         },
         pages: [{
             startedDateTime: (new Date()).toISOString(),
-            id: url,
+            id: 'page_' + 0,
             title: url,
             pageTimings: {
-                onConetentLoad: -1,
+                onContentLoad: -1,
                 onLoad: -1
             }
         }],
         entries: []
     };
+
+
+}
+
+function createPageOnUpdate(tab) {
+
+    var pageLen = logs[tab.id].pages.length;
+
+    logs[tab.id].pages.push(
+        {
+            startedDateTime: null,
+            id: 'page_' + pageLen,
+            title: tab.url,
+            pageTiming: {
+                onContentLoad: -1,
+                onLoad: -1
+            }
+        }
+    );
+
+
+}
+
+function createPageOnReload(tab) {
+
+    var pageLen = logs[tab.id].pages.length;
+
+    logs[tab.id].pages.push(
+        {
+            startedDateTime: null,
+            id: 'page_' + pageLen,
+            title: tab.url,
+            pageTiming: {
+                onContentLoad: -1,
+                onLoad: -1
+            }
+        }
+    );
+
+
+
 }
 
 function updateEntryRequest(requestId) {
 
-    var pageLen = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].pages.length;
-    var page = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].pages[pageLen-1];
+    var pageLen = logs[requestInfo[requestId].tabId].pages.length;
+    var page = logs[requestInfo[requestId].tabId].pages[pageLen-1];
 
     if (!entries[requestId]) {
 
@@ -73,13 +115,13 @@ function updateEntryRequest(requestId) {
             connection: ""
         };
 
-        logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries.push(entry);
-        var len = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries.length;
+        logs[requestInfo[requestId].tabId].entries.push(entry);
+        var len = logs[requestInfo[requestId].tabId].entries.length;
         entries[requestId] = len;
 
     } else {
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
         entry.pageref = page.id;
         entry.startedDateTime = (new Date(requestInfo[requestId].requestTime)).toISOString();
@@ -95,7 +137,7 @@ function updateEntryResponse(params, requestId) {
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
         entry.request.httpVersion = requestInfo[requestId].proto;
         entry.response = {
@@ -135,14 +177,14 @@ function updateEntryLoad(requestId) {
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
         entry.time = requestInfo[requestId].loadingTime - requestInfo[requestId].requestTime;
         entry.timings.receive = requestInfo[requestId].loadingTime - requestInfo[requestId].responseTime;
 
-        console.dir(logs[requestInfo[requestId].tabId + requestInfo[requestId].tabUrl]);
+        console.dir(logs[requestInfo[requestId].tabId]);
     } else {
-        
+
     }
 }
 
