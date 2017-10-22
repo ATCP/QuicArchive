@@ -6,7 +6,9 @@ function createRequestInfo(debuggeeId, params) {
     requestInfo[params.requestId] = {
         id: 0,
         tabId: debuggeeId.tabId,
-        dup: 0,
+        noReq: 0,
+        noResp: 0,
+        noLoad: 0,
         method: 0,
         url: 0,
         tabUrl: currentTabs[debuggeeId.tabId].url,
@@ -53,10 +55,11 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].id = params.requestId;
     requestInfo[params.requestId].type = params.type;
     requestInfo[params.requestId].method = params.request.method;
-    requestInfo[params.requestId].dup += 1;
+    requestInfo[params.requestId].noReq ++;
+    requestInfo[params.requestId].noLoad ++;
+
     requestInfo[params.requestId].url = params.request.url;
     requestInfo[params.requestId].requestHeaders = params.request.headers;
-
 
     var pageLen = logs[requestInfo[params.requestId].tabId].pages.length;
 
@@ -68,7 +71,9 @@ function updateRequestSent(params) {
 }
 
 function updateResponseRcv(params) {
+
     requestInfo[params.requestId].responseTime = params.timestamp;
+    requestInfo[params.requestId].noResp ++;
 
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;
@@ -78,6 +83,7 @@ function updateResponseRcv(params) {
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
 
     requestInfo[params.requestId].responseHeaders = params.response.headers;
+    requestInfo[params.requestId].requestHeaders = params.response.requestHeaders;
 
     resourceTime[params.requestId].requestTime = params.response.timing.requestTime;
     resourceTime[params.requestId].proxyStart = params.response.timing.proxyStart;
@@ -96,7 +102,6 @@ function updateResponseRcv(params) {
     resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
     resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
 
-
     //console.dir(resourceTime[params.requestId]);
 }
 
@@ -114,7 +119,7 @@ function updateDataRcv(params) {
 function updateFinLoad(params) {
     requestInfo[params.requestId].loadingTime = params.timestamp;
     requestInfo[params.requestId].encodedDataBytesFinLoad = params.encodedDataLength;
-    requestInfo[params.requestId].dup -- ;
+    requestInfo[params.requestId].noLoad -- ;
 
     var requestDiv = requests[params.requestId];
     var finLoad = document.createElement("div");

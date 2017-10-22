@@ -49,13 +49,12 @@ function createPageOnUpdate(tab) {
             startedDateTime: null,
             id: 'page_' + pageLen,
             title: tab.url,
-            pageTiming: {
+            pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
             }
         }
     );
-
 
 }
 
@@ -68,14 +67,12 @@ function createPageOnReload(tab) {
             startedDateTime: null,
             id: 'page_' + pageLen,
             title: tab.url,
-            pageTiming: {
+            pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
             }
         }
     );
-
-
 
 }
 
@@ -94,7 +91,7 @@ function updateEntryRequest(requestId) {
                 method: requestInfo[requestId].method,
                 url: requestInfo[requestId].url,
                 httpVersion: "",
-                cookies: [],
+                cookies: requestInfo[requestId].responseHeaders['cookie'],
                 headers: requestInfo[requestId].requestHeaders,
                 queryString: [],
                 headersSize: -1,
@@ -114,6 +111,11 @@ function updateEntryRequest(requestId) {
             serverIPAddress: "",
             connection: ""
         };
+
+        if (entry.request.method == 'POST') {
+            entry.request.bodySize = requestInfo[requestId].responseHeaders['content-length'];
+        }
+
 
         logs[requestInfo[requestId].tabId].entries.push(entry);
         var len = logs[requestInfo[requestId].tabId].entries.length;
@@ -140,20 +142,32 @@ function updateEntryResponse(params, requestId) {
         var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
         entry.request.httpVersion = requestInfo[requestId].proto;
+        entry.request.headers = requestInfo[requestId].requestHeaders;
+        if ('cookie' in requestInfo[requestId].requestHeaders)
+            entry.request.cookies = requestInfo[requestId].requestHeaders['cookie'];
+
+        if (entry.request.method == 'POST') {
+            entry.request.bodySize = requestInfo[requestId].requestHeaders['content-length'];
+        }
+
+
         entry.response = {
             status: params.response.status,
             statusText: params.response.statusText,
             httpVersion: requestInfo[requestId].proto,
-            cookies: [],
+            cookies: requestInfo[requestId].responseHeaders['set-cookie'],
             headers: requestInfo[requestId].responseHeaders,
-            redirectURL: "",
-            headersSize: -1,
+            redirectURL: requestInfo[requestId].responseHeaders['redirect'],
+            headersSize: params.response.encodedDataLength,
             bodySize: requestInfo[requestId].contentLen,
             content: {
                 size: requestInfo[requestId].contentLen,
                 mimeType: requestInfo[requestId].responseHeaders['content-type']
             }
         };
+
+        if (entry.response.status == '304')
+            entry.response.bodySize = 0;
 
         entry.cache = {};
         entry.timings = {
@@ -180,7 +194,7 @@ function updateEntryLoad(requestId) {
         var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
         entry.time = requestInfo[requestId].loadingTime - requestInfo[requestId].requestTime;
-        entry.timings.receive = requestInfo[requestId].loadingTime - requestInfo[requestId].responseTime;
+        entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].responseTime * 1000;
 
         console.dir(logs[requestInfo[requestId].tabId]);
     } else {
@@ -202,7 +216,7 @@ function updatePageLoadTime(tabId, timestamp) {
 
     var page = logs[tabId].pages[pageLen-1];
 
-    page.pageTiming.onLoad = timestamp;
+    page.pageTimings.onLoad = timestamp;
 }
 
 function updatePageDomLoadTime(tabId, timestamp) {
@@ -210,6 +224,6 @@ function updatePageDomLoadTime(tabId, timestamp) {
 
     var page = logs[tabId].pages[pageLen-1];
 
-    page.onContentLoad = timestamp;
+    page.pageTimings.onContentLoad = timestamp;
 }
 

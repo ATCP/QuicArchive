@@ -6,8 +6,6 @@ var queryInfo = {
 };
 
 
-var socket = new WebSocket('ws://127.0.0.1:1337');
-
 var currentTabs = {};
 
 function bootstrap(tabs) {
@@ -45,20 +43,6 @@ function bootstrap(tabs) {
 
 }
 
-socket.onopen = function (event) {
-    console.log((new Date()) + " connected to server\n");
-};
-
-socket.onerror = function (event) {
-
-};
-socket.onmessage = function(message) {
-    console.log(message);
-};
-
-socket.onclose = function(event) {
-
-};
 
 chrome.tabs.query(queryInfo, bootstrap);
 
@@ -112,12 +96,16 @@ function onEvent(debuggeeId, message, params) {
 
     }
     else if (message == "Network.responseReceived") {
+
+        if (!requestInfo[params.requestId]) {
+            console.log('network responseReceived ' + params.requestId + ' is not found');
+            return;
+        }
+
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
 
         appendResponse(params.requestId, params.response);
-
         updateResponseRcv(params);
-
         updateEntryResponse(params, params.requestId);
     }
     else if (message == "Network.dataReceived") {
@@ -127,26 +115,30 @@ function onEvent(debuggeeId, message, params) {
             updateDataRcv(params);
 
         } else {
-            console.error('request id not found!');
+            console.error('network dataReceived ' + params.requestId + ' is not found');
         }
     }
     else if (message == "Network.loadingFinished") {
+        if (!requestInfo[params.requestId]) {
+            console.log('network loadingFinished ' + params.requestId + ' is not found');
+            return;
+        }
+
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFinished. total bytes received; ' + params.encodedDataLength + '\n');
 
         updateFinLoad(params);
 
         updateEntryLoad(params.requestId);
 
-        if (requestInfo[params.requestId].dup <= 0) {
-            //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
-            socket.send(JSON.stringify(requestInfo[params.requestId]));
-        }
+        uploadHarLog(params.requestId);
+
 
     }
     else if (message == "Network.loadingFailed") {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
     }
     else if (message == "Page.loadEventFired") {
+
 
         console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
 
