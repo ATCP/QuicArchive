@@ -26,7 +26,7 @@ function createPageOnBoot(id, url) {
             version: 1.0
         },
         pages: [{
-            startedDateTime: (new Date()).toISOString(),
+            startedDateTime: null,
             id: 'page_' + 0,
             title: url,
             pageTimings: {
@@ -186,5 +186,30 @@ function updateEntryLoad(requestId) {
     } else {
 
     }
+}
+
+function updatePageDateTime(requestId, timestamp) {
+    var pageLen = logs[requestInfo[requestId].tabId].pages.length;
+
+    var page = logs[requestInfo[requestId].tabId].pages[pageLen-1];
+
+    page.startedDateTime = (new Date(timestamp)).toISOString();
+
+}
+
+function updatePageLoadTime(tabId, timestamp) {
+    var pageLen = logs[tabId].pages.length;
+
+    var page = logs[tabId].pages[pageLen-1];
+
+    page.pageTiming.onLoad = timestamp;
+}
+
+function updatePageDomLoadTime(tabId, timestamp) {
+    var pageLen = logs[tabId].pages.length;
+
+    var page = logs[tabId].pages[pageLen-1];
+
+    page.onContentLoad = timestamp;
 }
 

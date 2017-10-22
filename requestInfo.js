@@ -58,9 +58,13 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].requestHeaders = params.request.headers;
 
 
-    /*if (!logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl].pages.startedDateTime) {
-        updateHarDateTime(logs[requestInfo[params.requestId].tabId + requestInfo[params.requestId].tabUrl], params.timestamp);
-    }*/
+    var pageLen = logs[requestInfo[params.requestId].tabId].pages.length;
+
+    var page = logs[requestInfo[params.requestId].tabId].pages[pageLen-1];
+
+    if (!page.startedDateTime) {
+        updatePageDateTime(params.requestId, params.timestamp);
+    }
 }
 
 function updateResponseRcv(params) {

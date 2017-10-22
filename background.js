@@ -43,7 +43,6 @@ function bootstrap(tabs) {
     }
 
 
-
 }
 
 socket.onopen = function (event) {
@@ -148,14 +147,18 @@ function onEvent(debuggeeId, message, params) {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
     }
     else if (message == "Page.loadEventFired") {
-        console.log('loadEvent: ' + params.timestamp);
+
+        console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
+
+        updatePageLoadTime(debuggeeId.tabId, params.timestamp);
     }
     else if (message == "Page.domContentEventFired") {
-        console.log('domContent: ' + params.timestamp);
+        console.log(debuggeeId.tabId + ' domContent: ' + params.timestamp);
+
+        updatePageDomLoadTime(debuggeeId.tabId, params.timestamp);
+
     }
 }
-
-
 
 
 function appendResponse(requestId, response) {
