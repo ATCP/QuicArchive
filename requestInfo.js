@@ -85,24 +85,28 @@ function updateResponseRcv(params) {
     requestInfo[params.requestId].responseHeaders = params.response.headers;
     requestInfo[params.requestId].requestHeaders = params.response.requestHeaders;
 
-    resourceTime[params.requestId].requestTime = params.response.timing.requestTime;
-    resourceTime[params.requestId].proxyStart = params.response.timing.proxyStart;
-    resourceTime[params.requestId].proxyEnd = params.response.timing.proxyEnd;
-    resourceTime[params.requestId].dnsStart = params.response.timing.dnsStart;
-    resourceTime[params.requestId].dnsEnd = params.response.timing.dnsEnd;
-    resourceTime[params.requestId].connectStart = params.response.timing.connectStart;
-    resourceTime[params.requestId].connectEnd = params.response.timing.connectEnd;
-    resourceTime[params.requestId].sslStart = params.response.timing.sslStart;
-    resourceTime[params.requestId].sslEnd = params.response.timing.sslEnd;
-    resourceTime[params.requestId].workerStart = params.response.timing.workerStart;
-    resourceTime[params.requestId].workerReady = params.response.timing.workerReady;
-    resourceTime[params.requestId].sendStart = params.response.timing.sendStart;
-    resourceTime[params.requestId].sendEnd = params.response.timing.sendEnd;
-    resourceTime[params.requestId].pushStart = params.response.timing.pushStart;
-    resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
-    resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
 
-    //console.dir(resourceTime[params.requestId]);
+    try {
+        resourceTime[params.requestId].requestTime = params.response.timing.requestTime;
+        resourceTime[params.requestId].proxyStart = params.response.timing.proxyStart;
+        resourceTime[params.requestId].proxyEnd = params.response.timing.proxyEnd;
+        resourceTime[params.requestId].dnsStart = params.response.timing.dnsStart;
+        resourceTime[params.requestId].dnsEnd = params.response.timing.dnsEnd;
+        resourceTime[params.requestId].connectStart = params.response.timing.connectStart;
+        resourceTime[params.requestId].connectEnd = params.response.timing.connectEnd;
+        resourceTime[params.requestId].sslStart = params.response.timing.sslStart;
+        resourceTime[params.requestId].sslEnd = params.response.timing.sslEnd;
+        resourceTime[params.requestId].workerStart = params.response.timing.workerStart;
+        resourceTime[params.requestId].workerReady = params.response.timing.workerReady;
+        resourceTime[params.requestId].sendStart = params.response.timing.sendStart;
+        resourceTime[params.requestId].sendEnd = params.response.timing.sendEnd;
+        resourceTime[params.requestId].pushStart = params.response.timing.pushStart;
+        resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
+        resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
+    } catch (e) {
+        console.log('request id ' + params.requestId + 'entry id ' + entries[params.requestId]);
+
+    }
 }
 
 function updateDataRcv(params) {

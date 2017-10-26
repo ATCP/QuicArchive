@@ -136,6 +136,7 @@ function updateEntryRequest(requestId) {
 
 function updateEntryResponse(params, requestId) {
 
+
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
@@ -143,13 +144,15 @@ function updateEntryResponse(params, requestId) {
 
         entry.request.httpVersion = requestInfo[requestId].proto;
         entry.request.headers = requestInfo[requestId].requestHeaders;
-        if ('cookie' in requestInfo[requestId].requestHeaders)
+        try {
             entry.request.cookies = requestInfo[requestId].requestHeaders['cookie'];
+        } catch (e) {
+            console.log('request id ' + requestId + 'entry id ' + idx);
+        }
 
         if (entry.request.method == 'POST') {
             entry.request.bodySize = requestInfo[requestId].requestHeaders['content-length'];
         }
-
 
         entry.response = {
             status: params.response.status,
@@ -193,7 +196,7 @@ function updateEntryLoad(requestId) {
         var idx = entries[requestId] - 1;
         var entry = logs[requestInfo[requestId].tabId].entries[idx];
 
-        entry.time = requestInfo[requestId].loadingTime - requestInfo[requestId].requestTime;
+        entry.time = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].requestTime * 1000;
         entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].responseTime * 1000;
 
         console.dir(logs[requestInfo[requestId].tabId]);
