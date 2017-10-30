@@ -16,18 +16,22 @@ socket.onclose = function(event) {
 
 };
 
+
+
 function uploadHarLog(requestId) {
     if (requestInfo[requestId].noLoad <= 0) {
         //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
-        socket.send(JSON.stringify(requestInfo[requestId]));
+        //socket.send(JSON.stringify(requestInfo[requestId]));
     }
 }
 
 
+
 chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
-        //console.log('tabId:' + details.tabId);
+        console.log('tabId:' + details.tabId);
     },
     {urls: ["<all_urls>"]}
 );
+
 

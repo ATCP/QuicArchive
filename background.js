@@ -8,7 +8,11 @@ var queryInfo = {
 
 var currentTabs = {};
 
+
+
 function bootstrap(tabs) {
+
+
     console.log(tabs.length);
 
     var containers = document.createElement('div');
@@ -32,6 +36,8 @@ function bootstrap(tabs) {
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Page.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "DOM.enable");
+            //chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.setCacheDisabled", {cacheDisabled: true});
+
 
             chrome.debugger.onEvent.addListener(onEvent);
 
@@ -51,17 +57,27 @@ var requests = {}; //div
 
 function onEvent(debuggeeId, message, params) {
 
-    if (message == "DOM.documentUpdated") {
+    if (message == "Page.navigationRequested") {
 
+        console.log('page navigated: ' + params.navigationId + ' ' + params.url + ' ' + params.isInMainFrame + ' ' + params.isRedirect);
+
+    }
+    else if (message == "DOM.documentUpdated") {
+        console.log('dom document updated');
     }
     else if (message == "Network.requestWillBeSent") {
         var requestDiv = requests[params.requestId];
 
-        if (!requestDiv) {
+        if (!requestDiv ) {
+            /*no chrome extension*/
+
+            //if (!params.request.url.indexOf('chrome-extension'))
+            //    return;
+
             var requestDiv = document.createElement("div");
             requestDiv.className = "request-" + params.requestId;
             requests[params.requestId] = requestDiv;
-            
+
             //var urlLine = document.createElement("div");
             //urlLine.textContent = params.request.url;
             //requestDiv.appendChild(urlLine);
@@ -106,6 +122,7 @@ function onEvent(debuggeeId, message, params) {
 
         appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
+
         updateEntryResponse(params, params.requestId);
     }
     else if (message == "Network.dataReceived") {

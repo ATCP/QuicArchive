@@ -14,27 +14,42 @@ if (!Date.prototype.toISOString) {
     }
 }
 
+function stringToArr (str) {
+    return str.split(",");
+}
+
+function objToArr (obj) {
+    var result = Object.keys(obj).map(function(key) {
+        return [Number(key), obj[key]];
+    });
+    return result;
+}
+
 var logs = {};
 var entries = {};
 
 
 function createPageOnBoot(id, url) {
-    logs[id] = {
-        version: '1.2',
-        creator: {
-            name: "quicArchive",
-            version: 1.0
-        },
-        pages: [{
-            startedDateTime: null,
-            id: 'page_' + 0,
-            title: url,
-            pageTimings: {
-                onContentLoad: -1,
-                onLoad: -1
-            }
-        }],
-        entries: []
+    logs[id] =
+    {
+        log: {
+            version: '1.2',
+            creator: {
+                name: id.toString(),
+                version: "1.0"
+            },
+            pages: [{
+                startedDateTime: null,
+                id: 'page_' + 0,
+                title: url,
+                pageTimings: {
+                    onContentLoad: -1,
+                    onLoad: -1
+                },
+                _startTime: 0
+            }],
+            entries: []
+        }
     };
 
 
@@ -42,9 +57,9 @@ function createPageOnBoot(id, url) {
 
 function createPageOnUpdate(tab) {
 
-    var pageLen = logs[tab.id].pages.length;
+    var pageLen = logs[tab.id].log.pages.length;
 
-    logs[tab.id].pages.push(
+    logs[tab.id].log.pages.push(
         {
             startedDateTime: null,
             id: 'page_' + pageLen,
@@ -52,7 +67,8 @@ function createPageOnUpdate(tab) {
             pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
-            }
+            },
+            _startTime: 0
         }
     );
 
@@ -60,9 +76,9 @@ function createPageOnUpdate(tab) {
 
 function createPageOnReload(tab) {
 
-    var pageLen = logs[tab.id].pages.length;
+    var pageLen = logs[tab.id].log.pages.length;
 
-    logs[tab.id].pages.push(
+    logs[tab.id].log.pages.push(
         {
             startedDateTime: null,
             id: 'page_' + pageLen,
@@ -70,7 +86,8 @@ function createPageOnReload(tab) {
             pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
-            }
+            },
+            _startTime: 0
         }
     );
 
@@ -78,26 +95,38 @@ function createPageOnReload(tab) {
 
 function updateEntryRequest(requestId) {
 
-    var pageLen = logs[requestInfo[requestId].tabId].pages.length;
-    var page = logs[requestInfo[requestId].tabId].pages[pageLen-1];
+    var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
+    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
 
     if (!entries[requestId]) {
 
         var entry = {
             pageref: page.id,
-            startedDateTime: (new Date(requestInfo[requestId].requestTime)).toISOString(),
-            time: 0,
+            startedDateTime: (new Date(requestInfo[requestId].requestTime * 1000)).toISOString(),
+            time: -1,
             request: {
                 method: requestInfo[requestId].method,
                 url: requestInfo[requestId].url,
                 httpVersion: "",
-                cookies: requestInfo[requestId].responseHeaders['cookie'],
-                headers: requestInfo[requestId].requestHeaders,
+                cookies: [],
+                headers: [],
                 queryString: [],
                 headersSize: -1,
                 bodySize: -1
             },
-            response: {},
+            response: {
+                status: -1,
+                statusText: '',
+                httpVersion: '',
+                cookies: [],
+                headers: [],
+                redirectURL: '',
+                headersSize: -1,
+                bodySize: -1,
+                content: {
+                    size: -1,
+                    mimeType: ''
+            }},
             cache: {},
             timings: {
                 blocked: 0,
@@ -108,28 +137,25 @@ function updateEntryRequest(requestId) {
                 receive: 0,
                 ssl: -1
             },
-            serverIPAddress: "",
-            connection: ""
+            serverIPAddress: '',
+            connection: ''
         };
 
-        if (entry.request.method == 'POST') {
-            entry.request.bodySize = requestInfo[requestId].responseHeaders['content-length'];
-        }
 
 
-        logs[requestInfo[requestId].tabId].entries.push(entry);
-        var len = logs[requestInfo[requestId].tabId].entries.length;
+        logs[requestInfo[requestId].tabId].log.entries.push(entry);
+        var len = logs[requestInfo[requestId].tabId].log.entries.length;
         entries[requestId] = len;
 
     } else {
+
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
 
         entry.pageref = page.id;
-        entry.startedDateTime = (new Date(requestInfo[requestId].requestTime)).toISOString();
+        //entry.startedDateTime = (new Date(requestInfo[requestId].requestTime)).toISOString();
         entry.request.method = requestInfo[requestId].method;
         entry.request.url = requestInfo[requestId].url;
-        entry.request.headers = requestInfo[requestId].requestHeaders;
 
     }
 }
@@ -137,44 +163,61 @@ function updateEntryRequest(requestId) {
 function updateEntryResponse(params, requestId) {
 
 
+    var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
+    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
+
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
 
         entry.request.httpVersion = requestInfo[requestId].proto;
-        entry.request.headers = requestInfo[requestId].requestHeaders;
-        try {
-            entry.request.cookies = requestInfo[requestId].requestHeaders['cookie'];
-        } catch (e) {
-            console.log('request id ' + requestId + 'entry id ' + idx);
-        }
 
-        if (entry.request.method == 'POST') {
-            entry.request.bodySize = requestInfo[requestId].requestHeaders['content-length'];
-        }
+        if (requestInfo[requestId].requestHeaders) {
 
-        entry.response = {
-            status: params.response.status,
-            statusText: params.response.statusText,
-            httpVersion: requestInfo[requestId].proto,
-            cookies: requestInfo[requestId].responseHeaders['set-cookie'],
-            headers: requestInfo[requestId].responseHeaders,
-            redirectURL: requestInfo[requestId].responseHeaders['redirect'],
-            headersSize: params.response.encodedDataLength,
-            bodySize: requestInfo[requestId].contentLen,
-            content: {
-                size: requestInfo[requestId].contentLen,
-                mimeType: requestInfo[requestId].responseHeaders['content-type']
+            //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
+
+            if (requestInfo[requestId].requestHeaders['cookie'])
+               // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
+
+            if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
+                entry.request.bodySize = params.response.headers['content-length'];
             }
-        };
+        }
+
+        entry.response.status = params.response.status;
+        entry.response.statusText = params.response.statusText;
+        entry.response.httpVersion = requestInfo[requestId].proto;
+
+
+        if (params.response.encodedDataLength)
+            entry.response.headersSize = params.response.encodedDataLength;
+
+
+        if (requestInfo[requestId].responseHeaders) {
+
+            //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
+
+            if (requestInfo[requestId].responseHeaders['set-cookie']) {
+                //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
+            }
+
+            if (requestInfo[requestId].contentLen) {
+                entry.response.bodySize = requestInfo[requestId].contentLen;
+                entry.response.content.size = requestInfo[requestId].contentLen;
+            }
+
+            if (requestInfo[requestId].responseHeaders['content-type'])
+                entry.response.content.mimeType = requestInfo[requestId].responseHeaders['content-type'];
+
+        }
 
         if (entry.response.status == '304')
             entry.response.bodySize = 0;
 
         entry.cache = {};
         entry.timings = {
-            blocked: resourceTime[requestId].proxyEnd,
+            blocked: resourceTime[requestId].proxyEnd < 0 ? 0:resourceTime[requestId].proxyEnd,
             dns: resourceTime[requestId].dnsEnd - resourceTime[requestId].dnsStart,
             connect: resourceTime[requestId].connectEnd - resourceTime[requestId].connectStart,
             send: resourceTime[requestId].sendEnd - resourceTime[requestId].sendStart,
@@ -183,8 +226,14 @@ function updateEntryResponse(params, requestId) {
             ssl: resourceTime[requestId].sslEnd - resourceTime[requestId].sslStart
         };
 
-        entry.serverIPAddress = requestInfo[requestId].remoteIPAddr;
-        entry.connection = requestInfo[requestId].connId;
+        if (requestInfo[requestId].remoteIPAddr)
+            entry.serverIPAddress = requestInfo[requestId].remoteIPAddr;
+
+        entry.connection = requestInfo[requestId].connId.toString();
+
+    }
+    else {
+
 
     }
 
@@ -194,39 +243,75 @@ function updateEntryLoad(requestId) {
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
-        var entry = logs[requestInfo[requestId].tabId].entries[idx];
+        var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
 
-        entry.time = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].requestTime * 1000;
-        entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].responseTime * 1000;
+        if (resourceTime[requestId].requestTime) {
+            entry.time = requestInfo[requestId].loadingTime * 1000 - resourceTime[requestId].requestTime * 1000;
+            entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - (resourceTime[requestId].receiveHeadersEnd + resourceTime[requestId].requestTime * 1000);
+
+        } else {
+            entry.time = requestInfo[requestId].loadingTime * 1000 - requestInfo[requestId].requestTime * 1000;
+            entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - (resourceTime[requestId].receiveHeadersEnd + requestInfo[requestId].requestTime * 1000);
+        }
 
         console.dir(logs[requestInfo[requestId].tabId]);
-    } else {
 
     }
 }
 
 function updatePageDateTime(requestId, timestamp) {
-    var pageLen = logs[requestInfo[requestId].tabId].pages.length;
+    var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
 
-    var page = logs[requestInfo[requestId].tabId].pages[pageLen-1];
+    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
 
-    page.startedDateTime = (new Date(timestamp)).toISOString();
+    if (!page.startedDateTime) {
+        page.startedDateTime = (new Date(timestamp * 1000)).toISOString();
+        page._startTime = timestamp;
+    }
 
 }
 
 function updatePageLoadTime(tabId, timestamp) {
-    var pageLen = logs[tabId].pages.length;
+    var pageLen = logs[tabId].log.pages.length;
 
-    var page = logs[tabId].pages[pageLen-1];
+    var page = logs[tabId].log.pages[pageLen-1];
 
-    page.pageTimings.onLoad = timestamp;
+    page.pageTimings.onLoad = (timestamp - page._startTime) * 1000;
 }
 
 function updatePageDomLoadTime(tabId, timestamp) {
-    var pageLen = logs[tabId].pages.length;
+    var pageLen = logs[tabId].log.pages.length;
 
-    var page = logs[tabId].pages[pageLen-1];
+    var page = logs[tabId].log.pages[pageLen-1];
 
-    page.pageTimings.onContentLoad = timestamp;
+    page.pageTimings.onContentLoad = (timestamp - page._startTime) * 1000;
 }
 
+function sendLogsToServer(tabId) {
+    if (logs[tabId]) {
+
+
+        var send = function (message, callback) {
+            waitForConnection(function () {
+                socket.send(message);
+                if (typeof callback !== 'undefined') {
+                    callback();
+                }
+            }, 1000);
+        };
+
+        var waitForConnection = function (callback, interval) {
+            if (socket.readyState === 1) {
+                callback();
+            } else {
+                // optional: implement backoff for interval here
+                setTimeout(function () {
+                    waitForConnection(callback, interval);
+                }, interval);
+            }
+        };
+
+        send(JSON.stringify(logs[tabId]));
+        console.log('tabid ' + tabId + ' is sent');
+    }
+}

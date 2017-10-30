@@ -7,27 +7,31 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     /* page back and forward or new page*/
     if (changeInfo.status == 'loading') {
         if (currentTabs[tabId]) {
+
             if (changeInfo.url) {
-                console.log('tabs on back forward tab: ' + tabId + ' url ' + changeInfo.url + ' status ' + changeInfo.status);
+
 
                 currentTabs[tabId].url = changeInfo.url;
                 currentTabs[tabId].title = changeInfo.title;
-
+                currentTabs[tabId].status = changeInfo.status;
                 createPageOnUpdate(tab);
+
+                console.log('tabs on back forward tab: ' + tabId + ' url ' + changeInfo.url + ' status ' + changeInfo.status);
 
             } /* page reload */
             else if (changeInfo.url == undefined && tab.url.indexOf(currentTabs[tabId] > -1) /*&& changeInfo.status*/) {
 
+                createPageOnReload(tab);
+
                 console.log('tabs on reload tab: ' + tabId + ' url ' + tab.url + ' status ' + changeInfo.status);
 
-                createPageOnReload(tab);
             }
 
         }
         else if (!currentTabs[tabId]) {
+
             if (tab.url.substring(0, 5) == 'https' || tab.url.substring(0, 4) == 'http') {
 
-                console.log('tabs.onCreated tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
 
                 currentTabs[tabId] = {
                     url: tab.url,
@@ -39,15 +43,19 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "Page.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
+                //chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
 
                 chrome.debugger.onEvent.addListener(onEvent);
 
                 createPageOnBoot(tabId, tab.url);
 
+                console.log('tabs.onCreated tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
+
             }
 
         }
     } else if (changeInfo.status == 'completed') {
+
         console.log('tab completed');
     }
 
@@ -55,7 +63,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 chrome.tabs.onCreated.addListener(function (tab) {
 
-    console.log('tabs.onCreated -- window: ' + tab.windowId + ' tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
+
 
     if (tab.url.substring(0, 5) == 'https' || tab.url.substring(0, 4) == 'http') {
 
@@ -65,19 +73,30 @@ chrome.tabs.onCreated.addListener(function (tab) {
             status: tab.status
         };
 
+
         chrome.debugger.attach({tabId: tab.id}, version, null);
         chrome.debugger.sendCommand({tabId: tab.id}, "Network.enable");
         chrome.debugger.sendCommand({tabId: tab.id}, "Page.enable");
         chrome.debugger.sendCommand({tabId: tab.id}, "DOM.enable");
+        //chrome.debugger.sendCommand({tabId: tab.id}, "Network.setCacheDisabled", {cacheDisabled: true});
 
         chrome.debugger.onEvent.addListener(onEvent);
-
         createPageOnBoot(tab.id, tab.url);
     }
+
+    console.log('tabs.onCreated -- window: ' + tab.windowId + ' tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
 
 });
 
 chrome.tabs.onRemoved.addListener(function (tabId, props) {
 
+    console.log('tabs.onRemoved -- window: ' + props.windowId + ' tab: ' + tabId);
+
+     if (currentTabs[tabId]) {
+
+         sendLogsToServer(tabId);
+     }
 });
+
+
 

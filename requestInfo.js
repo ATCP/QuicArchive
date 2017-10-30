@@ -28,6 +28,7 @@ function createRequestInfo(debuggeeId, params) {
         requestHeaders: 0,
         responseHeaders: 0
     };
+
     resourceTime[params.requestId] = {
         requestTime: 0,
         proxyStart: 0,
@@ -61,25 +62,22 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].url = params.request.url;
     requestInfo[params.requestId].requestHeaders = params.request.headers;
 
-    var pageLen = logs[requestInfo[params.requestId].tabId].pages.length;
+    updatePageDateTime(params.requestId, params.timestamp);
 
-    var page = logs[requestInfo[params.requestId].tabId].pages[pageLen-1];
-
-    if (!page.startedDateTime) {
-        updatePageDateTime(params.requestId, params.timestamp);
-    }
 }
 
 function updateResponseRcv(params) {
 
-    requestInfo[params.requestId].responseTime = params.timestamp;
+    if (!requestInfo[params.requestId].responseTime)
+        requestInfo[params.requestId].responseTime = params.timestamp;
+
     requestInfo[params.requestId].noResp ++;
 
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;
     requestInfo[params.requestId].remoteIPAddr = params.response.remoteIPAddr;
     requestInfo[params.requestId].remotePort = params.response.remotePort;
-    requestInfo[params.requestId].contentLen = parseInt(params.response.headers['content-length'], 10);
+    requestInfo[params.requestId].contentLen = Number(params.response.headers['content-length']);
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
 
     requestInfo[params.requestId].responseHeaders = params.response.headers;
@@ -104,7 +102,7 @@ function updateResponseRcv(params) {
         resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
         resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
     } catch (e) {
-        console.log('request id ' + params.requestId + 'entry id ' + entries[params.requestId]);
+        console.log('request id ' + params.requestId + ' entry id ' + entries[params.requestId]);
 
     }
 }
@@ -127,9 +125,10 @@ function updateFinLoad(params) {
 
     var requestDiv = requests[params.requestId];
     var finLoad = document.createElement("div");
-    finLoad.statusText = 'finish Load';
+    finLoad.textContent = params.timestamp;
     requestDiv.appendChild(finLoad);
-    requestDiv.appendChild(formatHeaders(requestInfo[params.requestId]));
+    console.dir(requestInfo[params.requestId]);
+    console.dir(resourceTime[params.requestId]);
 
 
 
