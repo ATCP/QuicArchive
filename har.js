@@ -166,10 +166,14 @@ function updateEntryResponse(params, requestId) {
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
     var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
 
+
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
         var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
+
+        if (entry.pageref != page.id)
+            entry.pageref = page.id;
 
         entry.request.httpVersion = requestInfo[requestId].proto;
 
@@ -197,7 +201,6 @@ function updateEntryResponse(params, requestId) {
         if (requestInfo[requestId].responseHeaders) {
 
             //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
-
             if (requestInfo[requestId].responseHeaders['set-cookie']) {
                 //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
             }
@@ -234,6 +237,113 @@ function updateEntryResponse(params, requestId) {
     }
     else {
 
+        var entry = {
+            pageref: page.id,
+            startedDateTime: (new Date(resourceTime[requestId].requestTime * 1000)).toISOString(),
+            time: '',
+            request: {
+                method: 'GET',
+                url: '',
+                httpVersion: '',
+                cookies: [],
+                headers: [],
+                queryString: [],
+                headersSize: -1,
+                bodySize: -1
+            },
+            response: {
+                status: params.response.status,
+                statusText: params.response.statusText,
+                httpVersion: requestInfo[requestId].proto,
+                cookies: [],
+                headers: [],
+                redirectURL: '',
+                headersSize: -1,
+                bodySize: -1,
+                content: {
+                    size: -1,
+                    mimeType: ''
+                }
+            },
+            cache: {},
+            timings: {
+                blocked: 0,
+                dns: -1,
+                connect: -1,
+                send: 0,
+                wait: 0,
+                receive: 0,
+                ssl: -1
+            },
+            serverIPAddress: '',
+            connection: ''
+        };
+
+        entry.request.httpVersion = requestInfo[requestId].proto;
+        entry.request.url = params.response.url;
+
+        if (!resourceTime[requestId].requestTime) {
+            entry.startedDateTime = (new Date(params.timestamp * 1000)).toISOString();
+        }
+
+        if (requestInfo[params.requestId].requestHeaders) {
+            //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
+
+            if (requestInfo[requestId].requestHeaders['cookie']) {
+                // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
+            }
+
+            if (requestInfo[requestId].requestHeaders['method']) {
+                entry.request.method = requestInfo[requestId].requestHeaders['method'];
+            }
+
+            if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
+                entry.request.bodySize = params.response.headers['content-length'];
+            }
+        }
+
+        if (params.response.encodedDataLength)
+            entry.response.headersSize = params.response.encodedDataLength;
+
+        if (requestInfo[requestId].responseHeaders) {
+            //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
+
+            if (requestInfo[requestId].responseHeaders['set-cookie']) {
+                //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
+            }
+
+            if (requestInfo[requestId].contentLen) {
+                entry.response.bodySize = requestInfo[requestId].contentLen;
+                entry.response.content.size = requestInfo[requestId].contentLen;
+            }
+
+            if (requestInfo[requestId].responseHeaders['content-type'])
+                entry.response.content.mimeType = requestInfo[requestId].responseHeaders['content-type'];
+
+        }
+
+        if (entry.response.status == '304')
+            entry.response.bodySize = 0;
+
+        entry.cache = {};
+        entry.timings = {
+            blocked: resourceTime[requestId].proxyEnd < 0 ? 0:resourceTime[requestId].proxyEnd,
+            dns: resourceTime[requestId].dnsEnd - resourceTime[requestId].dnsStart,
+            connect: resourceTime[requestId].connectEnd - resourceTime[requestId].connectStart,
+            send: resourceTime[requestId].sendEnd - resourceTime[requestId].sendStart,
+            wait: resourceTime[requestId].receiveHeadersEnd - resourceTime[requestId].sendEnd,
+            receive: 0,
+            ssl: resourceTime[requestId].sslEnd - resourceTime[requestId].sslStart
+        };
+
+        if (requestInfo[requestId].remoteIPAddr)
+            entry.serverIPAddress = requestInfo[requestId].remoteIPAddr;
+
+        entry.connection = requestInfo[requestId].connId.toString();
+
+        logs[requestInfo[requestId].tabId].log.entries.push(entry);
+        var len = logs[requestInfo[requestId].tabId].log.entries.length;
+        entries[requestId] = len;
 
     }
 

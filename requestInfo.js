@@ -73,6 +73,7 @@ function updateResponseRcv(params) {
 
     requestInfo[params.requestId].noResp ++;
 
+    requestInfo[params.requestId].url  = params.response.url;
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;
     requestInfo[params.requestId].remoteIPAddr = params.response.remoteIPAddr;

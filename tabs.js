@@ -32,6 +32,13 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
             if (tab.url.substring(0, 5) == 'https' || tab.url.substring(0, 4) == 'http') {
 
+                chrome.debugger.attach({tabId: tabId}, version, null);
+                chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
+                chrome.debugger.sendCommand({tabId: tabId}, "Page.enable");
+                chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
+                chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
+
+                chrome.debugger.onEvent.addListener(onEvent);
 
                 currentTabs[tabId] = {
                     url: tab.url,
@@ -39,13 +46,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                     status: tab.status
                 };
 
-                chrome.debugger.attach({tabId: tabId}, version, null);
-                chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
-                chrome.debugger.sendCommand({tabId: tabId}, "Page.enable");
-                chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
-                //chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
 
-                chrome.debugger.onEvent.addListener(onEvent);
 
                 createPageOnBoot(tabId, tab.url);
 
@@ -64,8 +65,17 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 chrome.tabs.onCreated.addListener(function (tab) {
 
 
-
     if (tab.url.substring(0, 5) == 'https' || tab.url.substring(0, 4) == 'http') {
+
+        chrome.debugger.attach({tabId: tab.id}, version, null);
+        chrome.debugger.sendCommand({tabId: tab.id}, "Network.enable");
+        chrome.debugger.sendCommand({tabId: tab.id}, "Page.enable");
+        chrome.debugger.sendCommand({tabId: tab.id}, "DOM.enable");
+
+        chrome.debugger.sendCommand({tabId: tab.id}, "Network.setCacheDisabled", {cacheDisabled: true});
+
+        chrome.debugger.onEvent.addListener(onEvent);
+
 
         currentTabs[tab.id] = {
             url: tab.url,
@@ -74,13 +84,6 @@ chrome.tabs.onCreated.addListener(function (tab) {
         };
 
 
-        chrome.debugger.attach({tabId: tab.id}, version, null);
-        chrome.debugger.sendCommand({tabId: tab.id}, "Network.enable");
-        chrome.debugger.sendCommand({tabId: tab.id}, "Page.enable");
-        chrome.debugger.sendCommand({tabId: tab.id}, "DOM.enable");
-        //chrome.debugger.sendCommand({tabId: tab.id}, "Network.setCacheDisabled", {cacheDisabled: true});
-
-        chrome.debugger.onEvent.addListener(onEvent);
         createPageOnBoot(tab.id, tab.url);
     }
 

@@ -29,7 +29,9 @@ function uploadHarLog(requestId) {
 
 chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
-        console.log('tabId:' + details.tabId);
+
+        if (details.tabId)
+            console.log('tabId:' + details.tabId + ' url ' + details.url + ' requestId: ' + details.requestId);
     },
     {urls: ["<all_urls>"]}
 );

@@ -2,7 +2,7 @@
 var version = "1.2";
 //tip-of-tree
 var queryInfo = {
-    currentWindow: true
+    //currentWindow: true
 };
 
 
@@ -36,7 +36,7 @@ function bootstrap(tabs) {
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Page.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "DOM.enable");
-            //chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.setCacheDisabled", {cacheDisabled: true});
+            chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.setCacheDisabled", {cacheDisabled: true});
 
 
             chrome.debugger.onEvent.addListener(onEvent);
@@ -112,6 +112,32 @@ function onEvent(debuggeeId, message, params) {
 
     }
     else if (message == "Network.responseReceived") {
+
+        var requestDiv = requests[params.requestId];
+
+        if (!requestDiv ) {
+            /*no chrome extension*/
+
+            //if (!params.request.url.indexOf('chrome-extension'))
+            //    return;
+
+            var requestDiv = document.createElement("div");
+            requestDiv.className = "request-" + params.requestId;
+            requests[params.requestId] = requestDiv;
+
+            //var urlLine = document.createElement("div");
+            //urlLine.textContent = params.request.url;
+            //requestDiv.appendChild(urlLine);
+
+            createRequestInfo(debuggeeId, params);
+
+
+            requestInfo[params.requestId].requestTime = params.timestamp;
+            requestInfo[params.requestId].type = params.type;
+            requestInfo[params.requestId].id = params.requestId;
+
+        }
+
 
         if (!requestInfo[params.requestId]) {
             console.log('network responseReceived ' + params.requestId + ' is not found');
