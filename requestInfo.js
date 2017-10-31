@@ -62,7 +62,6 @@ function updateRequestSent(params) {
     requestInfo[params.requestId].url = params.request.url;
     requestInfo[params.requestId].requestHeaders = params.request.headers;
 
-    updatePageDateTime(params.requestId, params.timestamp);
 
 }
 
@@ -102,10 +101,15 @@ function updateResponseRcv(params) {
         resourceTime[params.requestId].pushStart = params.response.timing.pushStart;
         resourceTime[params.requestId].pushEnd = params.response.timing.pushEnd;
         resourceTime[params.requestId].receiveHeadersEnd = params.response.timing.receiveHeadersEnd;
+
+        //updatePageDateTime(params.requestId, params.response.timing.requestTime);
+
     } catch (e) {
         console.log('request id ' + params.requestId + ' entry id ' + entries[params.requestId]);
 
     }
+
+
 }
 
 function updateDataRcv(params) {

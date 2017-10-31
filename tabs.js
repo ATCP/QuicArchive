@@ -10,7 +10,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
             if (changeInfo.url) {
 
-
                 currentTabs[tabId].url = changeInfo.url;
                 currentTabs[tabId].title = changeInfo.title;
                 currentTabs[tabId].status = changeInfo.status;
@@ -19,7 +18,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 console.log('tabs on back forward tab: ' + tabId + ' url ' + changeInfo.url + ' status ' + changeInfo.status);
 
             } /* page reload */
-            else if (changeInfo.url == undefined && tab.url.indexOf(currentTabs[tabId] > -1) /*&& changeInfo.status*/) {
+            else if (changeInfo.url == undefined && tab.url.indexOf(currentTabs[tabId].url) > -1) {
 
                 createPageOnReload(tab);
 
@@ -38,7 +37,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
 
-                chrome.debugger.onEvent.addListener(onEvent);
+
 
                 currentTabs[tabId] = {
                     url: tab.url,
@@ -46,8 +45,9 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                     status: tab.status
                 };
 
+                chrome.debugger.sendCommand({tabId: tabId}, "Page.reload", {ignoreCache: true});
 
-
+                chrome.debugger.onEvent.addListener(onEvent);
                 createPageOnBoot(tabId, tab.url);
 
                 console.log('tabs.onCreated tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
@@ -83,8 +83,10 @@ chrome.tabs.onCreated.addListener(function (tab) {
             status: tab.status
         };
 
+        chrome.debugger.sendCommand({tabId: tab.id}, "Page.reload", {ignoreCache: true});
 
         createPageOnBoot(tab.id, tab.url);
+
     }
 
     console.log('tabs.onCreated -- window: ' + tab.windowId + ' tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);

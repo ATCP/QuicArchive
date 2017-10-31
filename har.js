@@ -38,7 +38,7 @@ function createPageOnBoot(id, url) {
                 name: id.toString(),
                 version: "1.0"
             },
-            pages: [{
+            pages: [/*{
                 startedDateTime: null,
                 id: 'page_' + 0,
                 title: url,
@@ -47,7 +47,7 @@ function createPageOnBoot(id, url) {
                     onLoad: -1
                 },
                 _startTime: 0
-            }],
+            }*/],
             entries: []
         }
     };
@@ -87,7 +87,8 @@ function createPageOnReload(tab) {
                 onContentLoad: -1,
                 onLoad: -1
             },
-            _startTime: 0
+            _startTime: 0,
+            _entries: 0
         }
     );
 
@@ -96,7 +97,10 @@ function createPageOnReload(tab) {
 function updateEntryRequest(requestId) {
 
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
-    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
+    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
+
+    if (!page)
+        return;
 
     if (!entries[requestId]) {
 
@@ -126,7 +130,9 @@ function updateEntryRequest(requestId) {
                 content: {
                     size: -1,
                     mimeType: ''
-            }},
+                },
+                _transferSize: -1
+            },
             cache: {},
             timings: {
                 blocked: 0,
@@ -138,13 +144,14 @@ function updateEntryRequest(requestId) {
                 ssl: -1
             },
             serverIPAddress: '',
-            connection: ''
+            connection: '',
+            _id: requestId
         };
-
 
 
         logs[requestInfo[requestId].tabId].log.entries.push(entry);
         var len = logs[requestInfo[requestId].tabId].log.entries.length;
+
         entries[requestId] = len;
 
     } else {
@@ -158,22 +165,39 @@ function updateEntryRequest(requestId) {
         entry.request.url = requestInfo[requestId].url;
 
     }
+
+    if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
+        if (page.title != requestInfo[requestId].url) {
+            logs[requestInfo[requestId].tabId].log.pages.pop();
+        }
+        else {
+            page.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
+            page._startTime = requestInfo[requestId].requestTime;
+        }
+    }
+    else {
+        if (page._startTime > requestInfo[requestId].requestTime) {
+            page.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
+            page._startTime = requestInfo[requestId].requestTime;
+        }
+    }
+
+
 }
 
 function updateEntryResponse(params, requestId) {
 
 
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
-    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
+    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
 
+    if (!page)
+        return;
 
     if (entries[requestId]) {
 
         var idx = entries[requestId] - 1;
         var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
-
-        if (entry.pageref != page.id)
-            entry.pageref = page.id;
 
         entry.request.httpVersion = requestInfo[requestId].proto;
 
@@ -185,7 +209,7 @@ function updateEntryResponse(params, requestId) {
                // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
 
             if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
-                entry.request.bodySize = params.response.headers['content-length'];
+                entry.request.bodySize = params.response.requestHeaders['content-length'];
             }
         }
 
@@ -234,8 +258,7 @@ function updateEntryResponse(params, requestId) {
 
         entry.connection = requestInfo[requestId].connId.toString();
 
-    }
-    else {
+    } else {
 
         var entry = {
             pageref: page.id,
@@ -263,7 +286,8 @@ function updateEntryResponse(params, requestId) {
                 content: {
                     size: -1,
                     mimeType: ''
-                }
+                },
+                _transferSize: -1
             },
             cache: {},
             timings: {
@@ -276,15 +300,19 @@ function updateEntryResponse(params, requestId) {
                 ssl: -1
             },
             serverIPAddress: '',
-            connection: ''
+            connection: '',
+            _id: requestId
         };
 
         entry.request.httpVersion = requestInfo[requestId].proto;
         entry.request.url = params.response.url;
 
         if (!resourceTime[requestId].requestTime) {
-            entry.startedDateTime = (new Date(params.timestamp * 1000)).toISOString();
+            entry.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
+
         }
+
+
 
         if (requestInfo[params.requestId].requestHeaders) {
             //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
@@ -298,7 +326,7 @@ function updateEntryResponse(params, requestId) {
             }
 
             if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
-                entry.request.bodySize = params.response.headers['content-length'];
+                entry.request.bodySize = params.response.requestheaders['content-length'];
             }
         }
 
@@ -347,6 +375,24 @@ function updateEntryResponse(params, requestId) {
 
     }
 
+    if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
+        if (page.title != requestInfo[requestId].url) {
+            logs[requestInfo[requestId].tabId].log.pages.pop();
+        }
+        else {
+            page.startedDateTime = entry.startedDateTime;
+            page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
+        }
+    }
+    else {
+        if (page._startTime > (resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime)) {
+            page.startedDateTime = entry.startedDateTime;
+            page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
+        }
+
+    }
+
+
 }
 
 function updateEntryLoad(requestId) {
@@ -364,19 +410,44 @@ function updateEntryLoad(requestId) {
             entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - (resourceTime[requestId].receiveHeadersEnd + requestInfo[requestId].requestTime * 1000);
         }
 
+        if (requestInfo[requestId].encodedDataBytesFinLoad) {
+            entry.response._transferSize = requestInfo[requestId].encodedDataBytesFinLoad;
+
+        }
+
+        if (requestInfo[requestId].totalDataLength) {
+            entry.response.content.size = parseInt(requestInfo[requestId].totalDataLength/requestInfo[requestId].noReq, 10);
+            entry.response.bodySize = entry.response.content.size;
+
+        }
+
         console.dir(logs[requestInfo[requestId].tabId]);
 
     }
 }
 
 function updatePageDateTime(requestId, timestamp) {
+
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
 
     var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
 
+    if (!page)
+        return;
+
     if (!page.startedDateTime) {
-        page.startedDateTime = (new Date(timestamp * 1000)).toISOString();
-        page._startTime = timestamp;
+
+        if (page.title != requestInfo[requestId].url) {
+            logs[requestInfo[requestId].tabId].log.pages.pop();
+        }
+        else {
+            page.startedDateTime = (new Date(timestamp * 1000)).toISOString();
+            page._startTime = timestamp;
+        }
+    }
+    else {
+        if (page._startTime > timestamp)
+            page._startTime = timestamp;
     }
 
 }
@@ -386,6 +457,9 @@ function updatePageLoadTime(tabId, timestamp) {
 
     var page = logs[tabId].log.pages[pageLen-1];
 
+    if (!page)
+        return;
+
     page.pageTimings.onLoad = (timestamp - page._startTime) * 1000;
 }
 
@@ -394,12 +468,14 @@ function updatePageDomLoadTime(tabId, timestamp) {
 
     var page = logs[tabId].log.pages[pageLen-1];
 
+    if (!page)
+        return;
+
     page.pageTimings.onContentLoad = (timestamp - page._startTime) * 1000;
 }
 
 function sendLogsToServer(tabId) {
     if (logs[tabId]) {
-
 
         var send = function (message, callback) {
             waitForConnection(function () {

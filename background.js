@@ -110,6 +110,8 @@ function onEvent(debuggeeId, message, params) {
 
         updateEntryRequest(params.requestId);
 
+        //updatePageDateTime(params.requestId, params.timestamp);
+
     }
     else if (message == "Network.responseReceived") {
 
