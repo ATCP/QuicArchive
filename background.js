@@ -64,6 +64,15 @@ function onEvent(debuggeeId, message, params) {
     }
     else if (message == "DOM.documentUpdated") {
         console.log('dom document updated');
+
+        if (currentTabs[debuggeeId.tabId].status == 'loading') {
+            createPageOnReload(debuggeeId.tabId);
+            console.log(debuggeeId.tabId + ' create page');
+            currentTabs[debuggeeId.tabId].status = 'created';
+        } else if (currentTabs[debuggeeId.tabId].status == 'domCompleted') {
+
+        }
+
     }
     else if (message == "Network.requestWillBeSent") {
         var requestDiv = requests[params.requestId];
@@ -100,12 +109,13 @@ function onEvent(debuggeeId, message, params) {
 
         requestDiv.appendChild(formatHeaders(params.request.headers));
         document.getElementById("container").appendChild(requestDiv);
+
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
 
         updateRequestSent(params);
 
         if (!logs[requestInfo[params.requestId].tabId]) {
-            createPageOnBoot(params.requestId);
+            //createPageOnBoot(params.requestId);
         }
 
         updateEntryRequest(params.requestId);
@@ -146,7 +156,7 @@ function onEvent(debuggeeId, message, params) {
             return;
         }
 
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
+        //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
 
         appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
@@ -155,12 +165,12 @@ function onEvent(debuggeeId, message, params) {
     }
     else if (message == "Network.dataReceived") {
         if (requests[params.requestId]) {
-            console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength + ' EncodedDataLength: ' + params.encodedDataLength + '\n');
+            //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength + ' EncodedDataLength: ' + params.encodedDataLength + '\n');
 
             updateDataRcv(params);
 
         } else {
-            console.error('network dataReceived ' + params.requestId + ' is not found');
+            //console.error('network dataReceived ' + params.requestId + ' is not found');
         }
     }
     else if (message == "Network.loadingFinished") {
@@ -169,7 +179,7 @@ function onEvent(debuggeeId, message, params) {
             return;
         }
 
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFinished. total bytes received; ' + params.encodedDataLength + '\n');
+        //console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFinished. total bytes received; ' + params.encodedDataLength + '\n');
 
         updateFinLoad(params);
 
@@ -185,7 +195,7 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Page.loadEventFired") {
 
 
-        console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
+       // console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
 
         updatePageLoadTime(debuggeeId.tabId, params.timestamp);
     }
@@ -193,6 +203,7 @@ function onEvent(debuggeeId, message, params) {
         console.log(debuggeeId.tabId + ' domContent: ' + params.timestamp);
 
         updatePageDomLoadTime(debuggeeId.tabId, params.timestamp);
+        currentTabs[debuggeeId.tabId].status = 'domCompleted';
 
     }
 }

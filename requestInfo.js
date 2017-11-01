@@ -72,12 +72,18 @@ function updateResponseRcv(params) {
 
     requestInfo[params.requestId].noResp ++;
 
-    requestInfo[params.requestId].url  = params.response.url;
+    if (requestInfo[params.requestId].type)
+        requestInfo[params.requestId].type = params.type;
+
+    if (requestInfo[params.requestId].url)
+        requestInfo[params.requestId].url  = params.response.url;
+
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;
     requestInfo[params.requestId].remoteIPAddr = params.response.remoteIPAddr;
     requestInfo[params.requestId].remotePort = params.response.remotePort;
-    requestInfo[params.requestId].contentLen = Number(params.response.headers['content-length']);
+
+
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
 
     requestInfo[params.requestId].responseHeaders = params.response.headers;
@@ -85,6 +91,7 @@ function updateResponseRcv(params) {
 
 
     try {
+
         resourceTime[params.requestId].requestTime = params.response.timing.requestTime;
         resourceTime[params.requestId].proxyStart = params.response.timing.proxyStart;
         resourceTime[params.requestId].proxyEnd = params.response.timing.proxyEnd;
@@ -105,7 +112,7 @@ function updateResponseRcv(params) {
         //updatePageDateTime(params.requestId, params.response.timing.requestTime);
 
     } catch (e) {
-        console.log('request id ' + params.requestId + ' entry id ' + entries[params.requestId]);
+        //console.log('request id ' + params.requestId + ' entry id ' + entries[params.requestId]);
 
     }
 
@@ -132,8 +139,8 @@ function updateFinLoad(params) {
     var finLoad = document.createElement("div");
     finLoad.textContent = params.timestamp;
     requestDiv.appendChild(finLoad);
-    console.dir(requestInfo[params.requestId]);
-    console.dir(resourceTime[params.requestId]);
+    //console.dir(requestInfo[params.requestId]);
+    //console.dir(resourceTime[params.requestId]);
 
 
 

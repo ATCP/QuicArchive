@@ -25,9 +25,20 @@ function objToArr (obj) {
     return result;
 }
 
+function toLowerCase(obj) {
+    var key, keys = Object.keys(obj);
+    var n = keys.length;
+    var newobj={};
+    while (n--) {
+        key = keys[n];
+        newobj[key.toLowerCase()] = obj[key];
+    }
+    return newobj;
+}
+
 var logs = {};
 var entries = {};
-
+var pages = {};
 
 function createPageOnBoot(id, url) {
     logs[id] =
@@ -55,34 +66,38 @@ function createPageOnBoot(id, url) {
 
 }
 
-function createPageOnUpdate(tab) {
+function createPageOnUpdate(tabId) {
 
-    var pageLen = logs[tab.id].log.pages.length;
+    var pageLen = logs[tabId].log.pages.length;
 
-    logs[tab.id].log.pages.push(
+    logs[tabId].log.pages.push(
         {
             startedDateTime: null,
             id: 'page_' + pageLen,
-            title: tab.url,
+            title: currentTabs[tabId].url,
             pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
             },
-            _startTime: 0
+            _startTime: 0,
+            _entries: 0
         }
     );
 
+
+
 }
 
-function createPageOnReload(tab) {
+function createPageOnReload(tabId) {
 
-    var pageLen = logs[tab.id].log.pages.length;
 
-    logs[tab.id].log.pages.push(
+    var pageLen = logs[tabId].log.pages.length;
+
+    logs[tabId].log.pages.push(
         {
             startedDateTime: null,
             id: 'page_' + pageLen,
-            title: tab.url,
+            title: currentTabs[tabId].url,
             pageTimings: {
                 onContentLoad: -1,
                 onLoad: -1
@@ -167,12 +182,36 @@ function updateEntryRequest(requestId) {
     }
 
     if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
-        if (page.title != requestInfo[requestId].url) {
-            logs[requestInfo[requestId].tabId].log.pages.pop();
+        if (page.title != entry.request.url) {
+
+            var idx = entries[requestId] - 1;
+            var find = false;
+            while (idx --) {
+                var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
+                if (page.title == entry.request.url) {
+                    page.startedDateTime = entry.startedDateTime;
+                    page._startTime = Date.parse(page.startedDateTime)/1000;
+                    entry.pageref = page.id;
+                    while ((idx ++) < entries[requestId] - 1) {
+                        entry = logs[requestInfo[requestId].tabId].log.entries[idx];
+                        entry.page = page.id;
+                    }
+                    find = true;
+                    break;
+                }
+            }
+
+            if (!find) {
+                page.startedDateTime = entry.startedDateTime;
+                page._startTime = requestInfo[requestId].requestTime;
+            }
         }
         else {
             page.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
             page._startTime = requestInfo[requestId].requestTime;
+
+            if (entry.pageref != page.id)
+                entry.pageref = page.id
         }
     }
     else {
@@ -201,15 +240,17 @@ function updateEntryResponse(params, requestId) {
 
         entry.request.httpVersion = requestInfo[requestId].proto;
 
+
         if (requestInfo[requestId].requestHeaders) {
 
+            requestInfo[requestId].requestHeaders = toLowerCase(requestInfo[requestId].requestHeaders);
             //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
 
             if (requestInfo[requestId].requestHeaders['cookie'])
                // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
 
             if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
-                entry.request.bodySize = params.response.requestHeaders['content-length'];
+                entry.request.bodySize = requestInfo[requestId].requestHeaders['content-length'];
             }
         }
 
@@ -224,10 +265,14 @@ function updateEntryResponse(params, requestId) {
 
         if (requestInfo[requestId].responseHeaders) {
 
+            requestInfo[requestId].responseHeaders = toLowerCase(requestInfo[requestId].responseHeaders);
+
             //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
             if (requestInfo[requestId].responseHeaders['set-cookie']) {
                 //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
             }
+
+            requestInfo[params.requestId].contentLen = Number(requestInfo[requestId].responseHeaders['content-length']);
 
             if (requestInfo[requestId].contentLen) {
                 entry.response.bodySize = requestInfo[requestId].contentLen;
@@ -236,6 +281,8 @@ function updateEntryResponse(params, requestId) {
 
             if (requestInfo[requestId].responseHeaders['content-type'])
                 entry.response.content.mimeType = requestInfo[requestId].responseHeaders['content-type'];
+            else if (requestInfo[requestId].type)
+                entry.response.content.mimeType = requestInfo[requestId].type;
 
         }
 
@@ -317,6 +364,8 @@ function updateEntryResponse(params, requestId) {
         if (requestInfo[params.requestId].requestHeaders) {
             //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
 
+            requestInfo[requestId].requestHeaders = toLowerCase(requestInfo[requestId].requestHeaders);
+
             if (requestInfo[requestId].requestHeaders['cookie']) {
                 // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
             }
@@ -326,7 +375,7 @@ function updateEntryResponse(params, requestId) {
             }
 
             if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
-                entry.request.bodySize = params.response.requestheaders['content-length'];
+                entry.request.bodySize = requestInfo[requestId].requestheaders['content-length'];
             }
         }
 
@@ -334,11 +383,16 @@ function updateEntryResponse(params, requestId) {
             entry.response.headersSize = params.response.encodedDataLength;
 
         if (requestInfo[requestId].responseHeaders) {
+
+            requestInfo[requestId].responseHeaders = toLowerCase(requestInfo[requestId].responseHeaders);
+
             //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
 
             if (requestInfo[requestId].responseHeaders['set-cookie']) {
                 //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
             }
+
+            requestInfo[params.requestId].contentLen = Number(requestInfo[requestId].responseHeaders['content-length']);
 
             if (requestInfo[requestId].contentLen) {
                 entry.response.bodySize = requestInfo[requestId].contentLen;
@@ -347,7 +401,10 @@ function updateEntryResponse(params, requestId) {
 
             if (requestInfo[requestId].responseHeaders['content-type'])
                 entry.response.content.mimeType = requestInfo[requestId].responseHeaders['content-type'];
+            else if (requestInfo[requestId].type) {
+                entry.response.content.mimeType = requestInfo[requestId].type;
 
+            }
         }
 
         if (entry.response.status == '304')
@@ -376,8 +433,13 @@ function updateEntryResponse(params, requestId) {
     }
 
     if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
-        if (page.title != requestInfo[requestId].url) {
-            logs[requestInfo[requestId].tabId].log.pages.pop();
+        if (page.title == requestInfo[requestId].url) {
+
+            page.startedDateTime = entry.startedDateTime;
+            page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
+
+            if (entry.pageref != page.id)
+                entry.pageref = page.id
         }
         else {
             page.startedDateTime = entry.startedDateTime;
@@ -401,7 +463,7 @@ function updateEntryLoad(requestId) {
         var idx = entries[requestId] - 1;
         var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
 
-        if (resourceTime[requestId].requestTime) {
+        if (resourceTime[requestId].requestTime && resourceTime[requestId].requestTime < requestInfo[requestId].requestTime) {
             entry.time = requestInfo[requestId].loadingTime * 1000 - resourceTime[requestId].requestTime * 1000;
             entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - (resourceTime[requestId].receiveHeadersEnd + resourceTime[requestId].requestTime * 1000);
 
@@ -421,36 +483,38 @@ function updateEntryLoad(requestId) {
 
         }
 
-        console.dir(logs[requestInfo[requestId].tabId]);
+        var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
+        var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
 
-    }
-}
+        if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
+            if (page.title == requestInfo[requestId].url) {
 
-function updatePageDateTime(requestId, timestamp) {
+                page.startedDateTime = entry.startedDateTime;
+                page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
 
-    var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
-
-    var page = logs[requestInfo[requestId].tabId].log.pages[pageLen-1];
-
-    if (!page)
-        return;
-
-    if (!page.startedDateTime) {
-
-        if (page.title != requestInfo[requestId].url) {
-            logs[requestInfo[requestId].tabId].log.pages.pop();
+                if (entry.pageref != page.id)
+                    entry.pageref = page.id
+            }
+            else
+            {
+                page.startedDateTime = entry.startedDateTime;
+                page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
+            }
         }
         else {
-            page.startedDateTime = (new Date(timestamp * 1000)).toISOString();
-            page._startTime = timestamp;
-        }
-    }
-    else {
-        if (page._startTime > timestamp)
-            page._startTime = timestamp;
-    }
+            if (page._startTime > (resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime)) {
+                page.startedDateTime = entry.startedDateTime;
+                page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
+            }
 
+        }
+
+        //console.dir(logs[requestInfo[requestId].tabId]);
+
+    }
 }
+
+
 
 function updatePageLoadTime(tabId, timestamp) {
     var pageLen = logs[tabId].log.pages.length;

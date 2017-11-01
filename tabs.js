@@ -13,14 +13,22 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 currentTabs[tabId].url = changeInfo.url;
                 currentTabs[tabId].title = changeInfo.title;
                 currentTabs[tabId].status = changeInfo.status;
-                createPageOnUpdate(tab);
+                //createPageOnUpdate(tabId);
 
-                console.log('tabs on back forward tab: ' + tabId + ' url ' + changeInfo.url + ' status ' + changeInfo.status);
+                console.log('tabs on back forward tab: ' + tab.url + ' url ' + changeInfo.url + ' status ' + changeInfo.status);
 
             } /* page reload */
             else if (changeInfo.url == undefined && tab.url.indexOf(currentTabs[tabId].url) > -1) {
 
-                createPageOnReload(tab);
+
+                if (currentTabs[tabId].status == 'boot') {
+
+                    currentTabs[tabId].status = 'created';
+                    createPageOnReload(tabId);
+                } else {
+                    currentTabs[tabId].status = changeInfo.status;
+                }
+
 
                 console.log('tabs on reload tab: ' + tabId + ' url ' + tab.url + ' status ' + changeInfo.status);
 
@@ -42,7 +50,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 currentTabs[tabId] = {
                     url: tab.url,
                     title: tab.title,
-                    status: tab.status
+                    status: 'boot'
                 };
 
                 chrome.debugger.sendCommand({tabId: tabId}, "Page.reload", {ignoreCache: true});
