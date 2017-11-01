@@ -1,5 +1,5 @@
 
-var socket = new WebSocket('ws://127.0.0.1:1337');
+var socket = new WebSocket('ws://128.110.96.149:1337');
 
 socket.onopen = function (event) {
     console.log((new Date()) + " connected to server\n");

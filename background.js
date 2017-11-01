@@ -67,8 +67,10 @@ function onEvent(debuggeeId, message, params) {
 
         if (currentTabs[debuggeeId.tabId].status == 'loading') {
             createPageOnReload(debuggeeId.tabId);
-            console.log(debuggeeId.tabId + ' create page');
+            console.log(debuggeeId.tabId + ' create page url ' + currentTabs[debuggeeId.tabId].url);
+
             currentTabs[debuggeeId.tabId].status = 'created';
+
         } else if (currentTabs[debuggeeId.tabId].status == 'domCompleted') {
 
         }
@@ -203,6 +205,7 @@ function onEvent(debuggeeId, message, params) {
         console.log(debuggeeId.tabId + ' domContent: ' + params.timestamp);
 
         updatePageDomLoadTime(debuggeeId.tabId, params.timestamp);
+
         currentTabs[debuggeeId.tabId].status = 'domCompleted';
 
     }
