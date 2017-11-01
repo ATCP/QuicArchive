@@ -46,6 +46,7 @@ function bootstrap(tabs) {
         }
     }
 
+    connect();
 
 }
 
