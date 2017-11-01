@@ -130,8 +130,8 @@ function updateEntryRequest(requestId) {
                 cookies: [],
                 headers: [],
                 queryString: [],
-                headersSize: -1,
-                bodySize: -1
+                headersSize: 0,
+                bodySize: 0
             },
             response: {
                 status: -1,
@@ -140,13 +140,13 @@ function updateEntryRequest(requestId) {
                 cookies: [],
                 headers: [],
                 redirectURL: '',
-                headersSize: -1,
-                bodySize: -1,
+                headersSize: 0,
+                bodySize: 0,
                 content: {
-                    size: -1,
+                    size: 0,
                     mimeType: ''
                 },
-                _transferSize: -1
+                _transferSize: 0
             },
             cache: {},
             timings: {
@@ -318,8 +318,8 @@ function updateEntryResponse(params, requestId) {
                 cookies: [],
                 headers: [],
                 queryString: [],
-                headersSize: -1,
-                bodySize: -1
+                headersSize: 0,
+                bodySize: 0
             },
             response: {
                 status: params.response.status,
@@ -328,13 +328,13 @@ function updateEntryResponse(params, requestId) {
                 cookies: [],
                 headers: [],
                 redirectURL: '',
-                headersSize: -1,
-                bodySize: -1,
+                headersSize: 0,
+                bodySize: 0,
                 content: {
-                    size: -1,
+                    size: 0,
                     mimeType: ''
                 },
-                _transferSize: -1
+                _transferSize: 0
             },
             cache: {},
             timings: {
@@ -563,5 +563,7 @@ function sendLogsToServer(tabId) {
 
         send(JSON.stringify(logs[tabId]));
         console.log('tabid ' + tabId + ' is sent');
+
+        logs[tabId] = null;
     }
 }

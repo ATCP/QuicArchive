@@ -88,7 +88,7 @@ chrome.tabs.onCreated.addListener(function (tab) {
         currentTabs[tab.id] = {
             url: tab.url,
             title: tab.title,
-            status: tab.status
+            status: 'boot'
         };
 
         chrome.debugger.sendCommand({tabId: tab.id}, "Page.reload", {ignoreCache: true});
