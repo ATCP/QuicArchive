@@ -2,13 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6d4d05eb-aef9-439a-9907-3da3ea3f7b91" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/background.js" afterPath="$PROJECT_DIR$/background.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/har.js" afterPath="$PROJECT_DIR$/har.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/requestInfo.js" afterPath="$PROJECT_DIR$/requestInfo.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tabs.js" afterPath="$PROJECT_DIR$/tabs.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/webRequests.js" afterPath="$PROJECT_DIR$/webRequests.js" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />

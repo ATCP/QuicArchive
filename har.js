@@ -49,13 +49,13 @@ var logs = {};
 var entries = {};
 var pages = {};
 
-function createPageOnBoot(id, url) {
+function createPageOnBoot(id, name) {
     logs[id] =
     {
         log: {
             version: '1.2',
             creator: {
-                name: id.toString(),
+                name: name.toString(),
                 version: "1.0"
             },
             pages: [/*{
@@ -563,8 +563,10 @@ function updatePageDomLoadTime(tabId, timestamp) {
 function sendLogsToServer(tabId) {
     if (logs[tabId]) {
 
-        if (!logs[tabId].log.pages.length)
+        if (!logs[tabId].log.pages.length) {
             logs[tabId] = null;
+            return;
+        }
 
         var send = function (message, callback) {
             waitForConnection(function () {
@@ -591,5 +593,4 @@ function sendLogsToServer(tabId) {
 
         logs[tabId] = null;
     }
-
 }

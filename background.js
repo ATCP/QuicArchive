@@ -41,7 +41,7 @@ function bootstrap(tabs) {
 
             chrome.debugger.onEvent.addListener(onEvent);
 
-            createPageOnBoot(tabs[i].id, url);
+            createPageOnBoot(tabs[i].id, tabs[i].windowId + '-' + tabs[i].id);
 
         }
     }

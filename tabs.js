@@ -58,7 +58,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
                 currentTabs[tabId].status = 'created';
 
-                createPageOnBoot(tabId, tab.url);
+                createPageOnBoot(tabId, tab.windowId + '-' + tabId);
 
                 createPageOnReload(tabId);
 
@@ -100,7 +100,7 @@ chrome.tabs.onCreated.addListener(function (tab) {
 
         currentTabs[tabId].status = 'created';
 
-        createPageOnBoot(tabId, tab.url);
+        createPageOnBoot(tabId, tab.windowId + '-' + tabId);
 
         createPageOnReload(tabId);
 
