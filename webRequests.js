@@ -2,7 +2,7 @@
 var socket;
 
 function connect() {
-    socket = new WebSocket('ws://128.110.96.149:1337');
+    socket = new WebSocket('ws://127.0.0.1:1337');
 
     socket.onopen = function (event) {
         console.log((new Date()) + " connected to server\n");
@@ -18,6 +18,7 @@ function connect() {
     };
 
     socket.onclose = function (e) {
+
         console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
         setTimeout(function() {
             connect();

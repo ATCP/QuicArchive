@@ -19,10 +19,19 @@ function stringToArr (str) {
 }
 
 function objToArr (obj) {
-    var result = Object.keys(obj).map(function(key) {
-        return [Number(key), obj[key]];
-    });
+    var result = [];
+
+    var key;
+    for (key in obj) {
+        result.push({
+            name: key,
+            value: obj[key],
+            comment: ''
+        });
+    }
+
     return result;
+
 }
 
 function toLowerCase(obj) {
@@ -112,17 +121,19 @@ function createPageOnReload(tabId) {
 function updateEntryRequest(requestId) {
 
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
+
     var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
 
     if (!page)
         return;
+
 
     if (!entries[requestId]) {
 
         var entry = {
             pageref: page.id,
             startedDateTime: (new Date(requestInfo[requestId].requestTime * 1000)).toISOString(),
-            time: -1,
+            time: 0,
             request: {
                 method: requestInfo[requestId].method,
                 url: requestInfo[requestId].url,
@@ -130,8 +141,8 @@ function updateEntryRequest(requestId) {
                 cookies: [],
                 headers: [],
                 queryString: [],
-                headersSize: 0,
-                bodySize: 0
+                headersSize: -1,
+                bodySize: -1
             },
             response: {
                 status: -1,
@@ -140,10 +151,10 @@ function updateEntryRequest(requestId) {
                 cookies: [],
                 headers: [],
                 redirectURL: '',
-                headersSize: 0,
-                bodySize: 0,
+                headersSize: -1,
+                bodySize: -1,
                 content: {
-                    size: 0,
+                    size: -1,
                     mimeType: ''
                 },
                 _transferSize: 0
@@ -182,26 +193,32 @@ function updateEntryRequest(requestId) {
     }
 
     if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
-        if (page.title != entry.request.url) {
+
+
+        if (page.title.indexOf(entry.request.url) != 0) {
+
 
             var idx = entries[requestId] - 1;
-            var find = false;
+            var found = false;
             while (idx --) {
                 var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
-                if (page.title == entry.request.url) {
+                if (page.title.indexOf(entry.request.url) == 0) {
                     page.startedDateTime = entry.startedDateTime;
                     page._startTime = Date.parse(page.startedDateTime)/1000;
                     entry.pageref = page.id;
+
+                    console.log(entry.pageref + ' ' + page.title + ' ' + entry.request.url);
+
                     while ((idx ++) < entries[requestId] - 1) {
                         entry = logs[requestInfo[requestId].tabId].log.entries[idx];
-                        entry.page = page.id;
+                        entry.pageref = page.id;
                     }
-                    find = true;
+                    found = true;
                     break;
                 }
             }
 
-            if (!find) {
+            if (!found) {
                 page.startedDateTime = entry.startedDateTime;
                 page._startTime = requestInfo[requestId].requestTime;
             }
@@ -244,12 +261,15 @@ function updateEntryResponse(params, requestId) {
         if (requestInfo[requestId].requestHeaders) {
 
             requestInfo[requestId].requestHeaders = toLowerCase(requestInfo[requestId].requestHeaders);
-            //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
 
-            if (requestInfo[requestId].requestHeaders['cookie'])
-               // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
+            entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
+
+            if (requestInfo[requestId].requestHeaders['cookie']) {
+                entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
+            }
 
             if (entry.request.method == 'POST' && requestInfo[requestId].requestHeaders['content-length']) {
+
                 entry.request.bodySize = requestInfo[requestId].requestHeaders['content-length'];
             }
         }
@@ -267,9 +287,10 @@ function updateEntryResponse(params, requestId) {
 
             requestInfo[requestId].responseHeaders = toLowerCase(requestInfo[requestId].responseHeaders);
 
-            //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
+            entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
+
             if (requestInfo[requestId].responseHeaders['set-cookie']) {
-                //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
+                entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
             }
 
             requestInfo[params.requestId].contentLen = Number(requestInfo[requestId].responseHeaders['content-length']);
@@ -310,7 +331,7 @@ function updateEntryResponse(params, requestId) {
         var entry = {
             pageref: page.id,
             startedDateTime: (new Date(resourceTime[requestId].requestTime * 1000)).toISOString(),
-            time: '',
+            time: 0,
             request: {
                 method: 'GET',
                 url: '',
@@ -318,8 +339,8 @@ function updateEntryResponse(params, requestId) {
                 cookies: [],
                 headers: [],
                 queryString: [],
-                headersSize: 0,
-                bodySize: 0
+                headersSize: -1,
+                bodySize: -1
             },
             response: {
                 status: params.response.status,
@@ -328,10 +349,10 @@ function updateEntryResponse(params, requestId) {
                 cookies: [],
                 headers: [],
                 redirectURL: '',
-                headersSize: 0,
-                bodySize: 0,
+                headersSize: -1,
+                bodySize: -1,
                 content: {
-                    size: 0,
+                    size: -1,
                     mimeType: ''
                 },
                 _transferSize: 0
@@ -360,14 +381,15 @@ function updateEntryResponse(params, requestId) {
         }
 
 
-
         if (requestInfo[params.requestId].requestHeaders) {
-            //entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
 
             requestInfo[requestId].requestHeaders = toLowerCase(requestInfo[requestId].requestHeaders);
 
+            entry.request.headers = objToArr(requestInfo[requestId].requestHeaders);
+
+
             if (requestInfo[requestId].requestHeaders['cookie']) {
-                // entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
+                entry.request.cookies = stringToArr(requestInfo[requestId].requestHeaders['cookie']);
             }
 
             if (requestInfo[requestId].requestHeaders['method']) {
@@ -386,10 +408,10 @@ function updateEntryResponse(params, requestId) {
 
             requestInfo[requestId].responseHeaders = toLowerCase(requestInfo[requestId].responseHeaders);
 
-            //entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
+            entry.response.headers = objToArr(requestInfo[requestId].responseHeaders);
 
             if (requestInfo[requestId].responseHeaders['set-cookie']) {
-                //entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
+                entry.response.cookies = stringToArr(requestInfo[requestId].responseHeaders['set-cookie']);
             }
 
             requestInfo[params.requestId].contentLen = Number(requestInfo[requestId].responseHeaders['content-length']);
@@ -433,7 +455,7 @@ function updateEntryResponse(params, requestId) {
     }
 
     if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
-        if (page.title == requestInfo[requestId].url) {
+        if (page.title.indexOf(requestInfo[requestId].url) == 0) {
 
             page.startedDateTime = entry.startedDateTime;
             page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
@@ -487,7 +509,7 @@ function updateEntryLoad(requestId) {
         var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
 
         if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
-            if (page.title == requestInfo[requestId].url) {
+            if (page.title.indexOf(requestInfo[requestId].url) == 0) {
 
                 page.startedDateTime = entry.startedDateTime;
                 page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
@@ -541,6 +563,9 @@ function updatePageDomLoadTime(tabId, timestamp) {
 function sendLogsToServer(tabId) {
     if (logs[tabId]) {
 
+        if (!logs[tabId].log.pages.length)
+            logs[tabId] = null;
+
         var send = function (message, callback) {
             waitForConnection(function () {
                 socket.send(message);
@@ -566,4 +591,5 @@ function sendLogsToServer(tabId) {
 
         logs[tabId] = null;
     }
+
 }

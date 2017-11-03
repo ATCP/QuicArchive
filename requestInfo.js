@@ -72,11 +72,11 @@ function updateResponseRcv(params) {
 
     requestInfo[params.requestId].noResp ++;
 
-    if (requestInfo[params.requestId].type)
+    if (!requestInfo[params.requestId].type)
         requestInfo[params.requestId].type = params.type;
 
-    if (requestInfo[params.requestId].url)
-        requestInfo[params.requestId].url  = params.response.url;
+    if (!requestInfo[params.requestId].url)
+        requestInfo[params.requestId].url = params.response.url;
 
     requestInfo[params.requestId].proto = params.response.protocol;
     requestInfo[params.requestId].connId = params.response.connectionId;

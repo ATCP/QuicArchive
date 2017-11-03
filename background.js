@@ -68,6 +68,7 @@ function onEvent(debuggeeId, message, params) {
 
         if (currentTabs[debuggeeId.tabId].status == 'loading') {
             createPageOnReload(debuggeeId.tabId);
+
             console.log(debuggeeId.tabId + ' create page url ' + currentTabs[debuggeeId.tabId].url);
 
             currentTabs[debuggeeId.tabId].status = 'created';
@@ -78,13 +79,12 @@ function onEvent(debuggeeId, message, params) {
 
     }
     else if (message == "Network.requestWillBeSent") {
+
         var requestDiv = requests[params.requestId];
 
         if (!requestDiv ) {
             /*no chrome extension*/
 
-            //if (!params.request.url.indexOf('chrome-extension'))
-            //    return;
 
             var requestDiv = document.createElement("div");
             requestDiv.className = "request-" + params.requestId;
@@ -113,13 +113,12 @@ function onEvent(debuggeeId, message, params) {
         requestDiv.appendChild(formatHeaders(params.request.headers));
         document.getElementById("container").appendChild(requestDiv);
 
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
+        //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
 
         updateRequestSent(params);
 
-        if (!logs[requestInfo[params.requestId].tabId]) {
-            //createPageOnBoot(params.requestId);
-        }
+        if (!requestInfo[params.requestId].url.indexOf('chrome-extension'))
+            return;
 
         updateEntryRequest(params.requestId);
 
@@ -130,11 +129,8 @@ function onEvent(debuggeeId, message, params) {
 
         var requestDiv = requests[params.requestId];
 
+        /*
         if (!requestDiv ) {
-            /*no chrome extension*/
-
-            //if (!params.request.url.indexOf('chrome-extension'))
-            //    return;
 
             var requestDiv = document.createElement("div");
             requestDiv.className = "request-" + params.requestId;
@@ -146,16 +142,17 @@ function onEvent(debuggeeId, message, params) {
 
             createRequestInfo(debuggeeId, params);
 
-
             requestInfo[params.requestId].requestTime = params.timestamp;
+
             requestInfo[params.requestId].type = params.type;
             requestInfo[params.requestId].id = params.requestId;
 
         }
-
+        */
 
         if (!requestInfo[params.requestId]) {
             console.log('network responseReceived ' + params.requestId + ' is not found');
+
             return;
         }
 
@@ -163,6 +160,9 @@ function onEvent(debuggeeId, message, params) {
 
         appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
+
+        if (!requestInfo[params.requestId].url || !requestInfo[params.requestId].url.indexOf('chrome-extension'))
+            return;
 
         updateEntryResponse(params, params.requestId);
     }
@@ -198,7 +198,7 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Page.loadEventFired") {
 
 
-       // console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
+        console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
 
         updatePageLoadTime(debuggeeId.tabId, params.timestamp);
     }

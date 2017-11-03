@@ -20,15 +20,18 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
             } /* page reload */
             else if (changeInfo.url == undefined && tab.url.indexOf(currentTabs[tabId].url) > -1) {
 
-
                 if (currentTabs[tabId].status == 'boot') {
+                    currentTabs[tabId].status = 'loading';
 
-                    currentTabs[tabId].status = 'created';
                     createPageOnReload(tabId);
-                } else {
-                    currentTabs[tabId].status = changeInfo.status;
                 }
+                else if (currentTabs[tabId].status == 'domCompleted') {
+                    currentTabs[tabId].status = 'loading';
+                    //createPageOnReload(tabId);
 
+                } else if (currentTabs[tabId].status == 'created') {
+
+                }
 
                 console.log('tabs on reload tab: ' + tabId + ' url ' + tab.url + ' status ' + changeInfo.status);
 
@@ -45,7 +48,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
 
-
+                chrome.debugger.onEvent.addListener(onEvent);
 
                 currentTabs[tabId] = {
                     url: tab.url,
@@ -53,10 +56,14 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                     status: 'boot'
                 };
 
+                currentTabs[tabId].status = 'created';
+
+                createPageOnBoot(tabId, tab.url);
+
+                createPageOnReload(tabId);
+
                 chrome.debugger.sendCommand({tabId: tabId}, "Page.reload", {ignoreCache: true});
 
-                chrome.debugger.onEvent.addListener(onEvent);
-                createPageOnBoot(tabId, tab.url);
 
                 console.log('tabs.onCreated tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
 
@@ -91,9 +98,14 @@ chrome.tabs.onCreated.addListener(function (tab) {
             status: 'boot'
         };
 
+        currentTabs[tabId].status = 'created';
+
+        createPageOnBoot(tabId, tab.url);
+
+        createPageOnReload(tabId);
+
         chrome.debugger.sendCommand({tabId: tab.id}, "Page.reload", {ignoreCache: true});
 
-        createPageOnBoot(tab.id, tab.url);
 
     }
 
