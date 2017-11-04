@@ -79,7 +79,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 chrome.tabs.onCreated.addListener(function (tab) {
 
-
+    /*
     if (tab.url.substring(0, 5) == 'https' || tab.url.substring(0, 4) == 'http') {
 
         chrome.debugger.attach({tabId: tab.id}, version, null);
@@ -98,16 +98,17 @@ chrome.tabs.onCreated.addListener(function (tab) {
             status: 'boot'
         };
 
-        currentTabs[tabId].status = 'created';
+        currentTabs[tab.id].status = 'created';
 
-        createPageOnBoot(tabId, tab.windowId + '-' + tabId);
+        createPageOnBoot(tab.id, tab.windowId + '-' + tab.id);
 
-        createPageOnReload(tabId);
+        createPageOnReload(tab.id);
 
         chrome.debugger.sendCommand({tabId: tab.id}, "Page.reload", {ignoreCache: true});
 
 
     }
+    */
 
     console.log('tabs.onCreated -- window: ' + tab.windowId + ' tab: ' + tab.id + ' title: ' + tab.title + ' index ' + tab.index + ' url ' + tab.url);
 
