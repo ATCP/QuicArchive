@@ -191,9 +191,12 @@ function onEvent(debuggeeId, message, params) {
         uploadHarLog(params.requestId);
 
 
+
     }
     else if (message == "Network.loadingFailed") {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
+
+        //requestInfo[params.requestId] = null
     }
     else if (message == "Page.loadEventFired") {
 

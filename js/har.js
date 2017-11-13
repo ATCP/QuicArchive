@@ -377,7 +377,6 @@ function updateEntryResponse(params, requestId) {
 
         if (!resourceTime[requestId].requestTime) {
             entry.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
-
         }
 
 

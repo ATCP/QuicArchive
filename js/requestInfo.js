@@ -139,9 +139,18 @@ function updateFinLoad(params) {
     var finLoad = document.createElement("div");
     finLoad.textContent = params.timestamp;
     requestDiv.appendChild(finLoad);
+
     //console.dir(requestInfo[params.requestId]);
     //console.dir(resourceTime[params.requestId]);
 
+}
 
 
+function uploadHarLog(requestId) {
+    if (requestInfo[requestId].noLoad <= 0) {
+        //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
+        //socket.send(JSON.stringify(requestInfo[requestId]));
+        resourceTime[requestId] = null;
+        requestInfo[requestId] = null;
+    }
 }
