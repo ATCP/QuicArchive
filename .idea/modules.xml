@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/live-cap.iml" filepath="$PROJECT_DIR$/.idea/live-cap.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/QuicArchive.iml" filepath="$PROJECT_DIR$/.idea/QuicArchive.iml" />
     </modules>
   </component>
 </project>
