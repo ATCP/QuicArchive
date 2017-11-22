@@ -83,7 +83,6 @@ function updateResponseRcv(params) {
     requestInfo[params.requestId].remoteIPAddr = params.response.remoteIPAddr;
     requestInfo[params.requestId].remotePort = params.response.remotePort;
 
-
     requestInfo[params.requestId].totalEncodedDataLength += params.response.encodedDataLength;
 
     requestInfo[params.requestId].responseHeaders = params.response.headers;
@@ -112,6 +111,7 @@ function updateResponseRcv(params) {
         //updatePageDateTime(params.requestId, params.response.timing.requestTime);
 
     } catch (e) {
+
         //console.log('request id ' + params.requestId + ' entry id ' + entries[params.requestId]);
 
     }
@@ -120,10 +120,10 @@ function updateResponseRcv(params) {
 }
 
 function updateDataRcv(params) {
-    var dataRev = document.createElement("div");
-    dataRev.textContent = params.encodedDataLength;
-    var requestDiv = requests[params.requestId];
-    requestDiv.appendChild(dataRev);
+    //var dataRev = document.createElement("div");
+    //dataRev.textContent = params.encodedDataLength;
+    //var requestDiv = requests[params.requestId];
+    //requestDiv.appendChild(dataRev);
 
     requestInfo[params.requestId].totalEncodedDataLength += params.encodedDataLength;
     requestInfo[params.requestId].totalDataLength += params.dataLength;
@@ -135,10 +135,10 @@ function updateFinLoad(params) {
     requestInfo[params.requestId].encodedDataBytesFinLoad = params.encodedDataLength;
     requestInfo[params.requestId].noLoad -- ;
 
-    var requestDiv = requests[params.requestId];
-    var finLoad = document.createElement("div");
-    finLoad.textContent = params.timestamp;
-    requestDiv.appendChild(finLoad);
+    //var requestDiv = requests[params.requestId];
+    //var finLoad = document.createElement("div");
+    //finLoad.textContent = params.timestamp;
+    //requestDiv.appendChild(finLoad);
 
     //console.dir(requestInfo[params.requestId]);
     //console.dir(resourceTime[params.requestId]);
@@ -152,5 +152,6 @@ function uploadHarLog(requestId) {
         //socket.send(JSON.stringify(requestInfo[requestId]));
         resourceTime[requestId] = null;
         requestInfo[requestId] = null;
+        requests[requestId] = null;
     }
 }

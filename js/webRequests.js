@@ -2,7 +2,7 @@
 var socket;
 
 function connect() {
-    socket = new WebSocket('ws://128.110.96.149:1337');
+    socket = new WebSocket('ws://128.46.202.232:1337');
 
     socket.onopen = function (event) {
         console.log((new Date()) + " connected to server\n");

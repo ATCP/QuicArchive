@@ -82,13 +82,15 @@ function onEvent(debuggeeId, message, params) {
 
         var requestDiv = requests[params.requestId];
 
+
         if (!requestDiv ) {
             /*no chrome extension*/
 
+            requests[params.requestId] = params.requestId;
 
-            var requestDiv = document.createElement("div");
-            requestDiv.className = "request-" + params.requestId;
-            requests[params.requestId] = requestDiv;
+            //var requestDiv = document.createElement("div");
+            //requestDiv.className = "request-" + params.requestId;
+            // requests[params.requestId] = requestDiv;
 
             //var urlLine = document.createElement("div");
             //urlLine.textContent = params.request.url;
@@ -99,26 +101,24 @@ function onEvent(debuggeeId, message, params) {
         }
 
         if (params.redirectResponse) {
-            var redirectRes = document.createElement("div");
-            redirectRes.textContent = "redirect";
-            requestDiv.appendChild(redirectRes);
-            appendResponse(params.requestId, params.redirectResponse);
+            //var redirectRes = document.createElement("div");
+            //redirectRes.textContent = "redirect";
+            //requestDiv.appendChild(redirectRes);
+            //appendResponse(params.requestId, params.redirectResponse);
         }
 
-        var requestLine = document.createElement("div");
-        requestLine.textContent = "\n" + params.request.method + ' ' + parseURL(params.request.url).host + ' ' + params.type;
-
-        requestDiv.appendChild(requestLine);
-
-        requestDiv.appendChild(formatHeaders(params.request.headers));
-        document.getElementById("container").appendChild(requestDiv);
+        //var requestLine = document.createElement("div");
+        //requestLine.textContent = "\n" + params.request.method + ' ' + parseURL(params.request.url).host + ' ' + params.type;
+        //requestDiv.appendChild(requestLine);
+        //requestDiv.appendChild(formatHeaders(params.request.headers));
+        //document.getElementById("container").appendChild(requestDiv);
 
         //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
 
         updateRequestSent(params);
 
-        if (!requestInfo[params.requestId].url.indexOf('chrome-extension'))
-            return;
+        //if (!requestInfo[params.requestId].url.indexOf('chrome-extension'))
+        //    return;
 
         updateEntryRequest(params.requestId);
 
@@ -150,25 +150,24 @@ function onEvent(debuggeeId, message, params) {
         }
         */
 
-        if (!requestInfo[params.requestId]) {
+        if (!requestDiv) {
             console.log('network responseReceived ' + params.requestId + ' is not found');
-
             return;
         }
 
-        //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Response received: content length: ' + params.response.headers['content-length'] + '\n');
 
-        appendResponse(params.requestId, params.response);
+        //appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
 
-        if (!requestInfo[params.requestId].url || !requestInfo[params.requestId].url.indexOf('chrome-extension'))
+        if (!requestInfo[params.requestId].url)//|| !requestInfo[params.requestId].url.indexOf('chrome-extension'))
             return;
 
         updateEntryResponse(params, params.requestId);
     }
     else if (message == "Network.dataReceived") {
         if (requests[params.requestId]) {
-            //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength + ' EncodedDataLength: ' + params.encodedDataLength + '\n');
+            //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength +
+            // ' EncodedDataLength: ' + params.encodedDataLength + '\n');
 
             updateDataRcv(params);
 
@@ -196,10 +195,9 @@ function onEvent(debuggeeId, message, params) {
     else if (message == "Network.loadingFailed") {
         console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
 
-        //requestInfo[params.requestId] = null
+
     }
     else if (message == "Page.loadEventFired") {
-
 
         console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
 
@@ -220,9 +218,7 @@ function appendResponse(requestId, response) {
     var requestDiv = requests[requestId];
     //requestDiv.appendChild(formatHeaders(response.requestHeaders));
     var statusLine = document.createElement("div");
-
     statusLine.textContent = "\n" + response.protocol + ' ' + response.status + ' ' + response.statusText + ' ' + response.encodedDataLength.toString() + ' ' + response.connectionId.toString() + '\n';
-
     requestDiv.appendChild(statusLine);
     requestDiv.appendChild(formatHeaders(response.headers));
 
