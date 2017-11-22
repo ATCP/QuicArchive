@@ -113,12 +113,13 @@ function onEvent(debuggeeId, message, params) {
         //requestDiv.appendChild(formatHeaders(params.request.headers));
         //document.getElementById("container").appendChild(requestDiv);
 
-        //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Request will be sent' + '\n');
-
         updateRequestSent(params);
 
-        //if (!requestInfo[params.requestId].url.indexOf('chrome-extension'))
-        //    return;
+        var pageLen = logs[debuggeeId.tabId].log.pages.length;
+        var page = logs[debuggeeId.tabId].log.pages[pageLen - 1];
+
+        if ((!requestInfo[params.requestId].url.indexOf('chrome-extension')) && !page && !page.startedDateTime)
+            return;
 
         updateEntryRequest(params.requestId);
 
@@ -155,25 +156,25 @@ function onEvent(debuggeeId, message, params) {
             return;
         }
 
-
         //appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
 
-        if (!requestInfo[params.requestId].url)//|| !requestInfo[params.requestId].url.indexOf('chrome-extension'))
+        var pageLen = logs[debuggeeId.tabId].log.pages.length;
+        var page = logs[debuggeeId.tabId].log.pages[pageLen - 1];
+
+        if (!requestInfo[params.requestId].url.indexOf('chrome-extension') && !page && !page.startedDateTime)
             return;
 
         updateEntryResponse(params, params.requestId);
+
     }
     else if (message == "Network.dataReceived") {
-        if (requests[params.requestId]) {
-            //console.log(debuggeeId.tabId + ' ' + params.requestId + ' Data received: ' + params.dataLength +
-            // ' EncodedDataLength: ' + params.encodedDataLength + '\n');
-
-            updateDataRcv(params);
-
-        } else {
-            //console.error('network dataReceived ' + params.requestId + ' is not found');
+        if (!requests[params.requestId]) {
+            console.log('network dataReceived ' + params.requestId + ' is not found');
+            return;
         }
+
+        updateDataRcv(params);
     }
     else if (message == "Network.loadingFinished") {
         if (!requestInfo[params.requestId]) {
@@ -190,11 +191,16 @@ function onEvent(debuggeeId, message, params) {
         uploadHarLog(params.requestId);
 
 
-
     }
     else if (message == "Network.loadingFailed") {
-        console.log(debuggeeId.tabId + ' ' + params.requestId + ' loadingFailed' + '\n');
+        if (!requestInfo[params.requestId]) {
+            console.log('network loadingFailed ' + params.requestId + ' is not found');
+            return;
+        }
 
+        updateFailReason(params);
+        //updateHarFailReason(params);
+        uploadHarLog(params.requestId);
 
     }
     else if (message == "Page.loadEventFired") {
@@ -202,6 +208,7 @@ function onEvent(debuggeeId, message, params) {
         console.log(debuggeeId.tabId + ' loadEvent: ' + params.timestamp);
 
         updatePageLoadTime(debuggeeId.tabId, params.timestamp);
+
     }
     else if (message == "Page.domContentEventFired") {
         console.log(debuggeeId.tabId + ' domContent: ' + params.timestamp);

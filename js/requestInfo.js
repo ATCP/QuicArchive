@@ -24,6 +24,7 @@ function createRequestInfo(debuggeeId, params) {
         requestTime: 0,
         responseTime: 0,
         loadingTime: 0,
+        failTime: 0,
         objLoadTime: 0,
         requestHeaders: 0,
         responseHeaders: 0
@@ -147,11 +148,26 @@ function updateFinLoad(params) {
 
 
 function uploadHarLog(requestId) {
-    if (requestInfo[requestId].noLoad <= 0) {
+    if (!requestInfo[requestId].noLoad) {
+
         //console.log(JSON.stringify(requestInfo[params.requestId], null, '\t'));
         //socket.send(JSON.stringify(requestInfo[requestId]));
+
         resourceTime[requestId] = null;
         requestInfo[requestId] = null;
         requests[requestId] = null;
+        entries[requestId] = null;
+
     }
+
+}
+
+function updateFailReason(params) {
+
+    requestInfo[params.requestId].failTime = params.timestamp;
+    console.log(requestInfo[params.requestId].failTime);
+    requestInfo[params.requestId].noLoad -- ;
+
+
+
 }

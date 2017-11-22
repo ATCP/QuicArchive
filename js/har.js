@@ -90,10 +90,9 @@ function createPageOnUpdate(tabId) {
             },
             _startTime: 0,
             _entries: 0
+
         }
     );
-
-
 
 }
 
@@ -171,11 +170,16 @@ function updateEntryRequest(requestId) {
             },
             serverIPAddress: '',
             connection: '',
-            _id: requestId
+            _id: requestId,
+            _failReason: null
         };
 
 
         logs[requestInfo[requestId].tabId].log.entries.push(entry);
+
+        if (!page.pageTimings.onLoad)
+            page._entries ++;
+
         var len = logs[requestInfo[requestId].tabId].log.entries.length;
 
         entries[requestId] = len;
@@ -214,7 +218,10 @@ function updateEntryRequest(requestId) {
                         entry.pageref = page.id;
                     }
                     found = true;
+
                     break;
+                } else {
+
                 }
             }
 
@@ -237,7 +244,6 @@ function updateEntryRequest(requestId) {
             page._startTime = requestInfo[requestId].requestTime;
         }
     }
-
 
 }
 
@@ -369,7 +375,8 @@ function updateEntryResponse(params, requestId) {
             },
             serverIPAddress: '',
             connection: '',
-            _id: requestId
+            _id: requestId,
+            _failReason: null
         };
 
         entry.request.httpVersion = requestInfo[requestId].proto;
@@ -448,6 +455,10 @@ function updateEntryResponse(params, requestId) {
         entry.connection = requestInfo[requestId].connId.toString();
 
         logs[requestInfo[requestId].tabId].log.entries.push(entry);
+
+        if (!page.pageTimings.onLoad)
+            page._entries ++;
+
         var len = logs[requestInfo[requestId].tabId].log.entries.length;
         entries[requestId] = len;
 
@@ -527,11 +538,7 @@ function updateEntryLoad(requestId) {
                 page.startedDateTime = entry.startedDateTime;
                 page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
             }
-
         }
-
-        //console.dir(logs[requestInfo[requestId].tabId]);
-
     }
 }
 
@@ -557,6 +564,33 @@ function updatePageDomLoadTime(tabId, timestamp) {
         return;
 
     page.pageTimings.onContentLoad = (timestamp - page._startTime) * 1000;
+}
+
+function updateHarFailReason(params) {
+    if (entries[params.requestId]) {
+        var idx = entries[params.requestId] - 1;
+        var entry = logs[requestInfo[params.requestId].tabId].log.entries[idx];
+
+        entry._failReason = params.errorText + '-' + params.cancel;
+
+        if (requestInfo[params.requestId].totalDataLength) {
+            entry.response.content.size = parseInt(requestInfo[params.requestId].totalDataLength/requestInfo[params.requestId].noReq, 10);
+            entry.response.bodySize = entry.response.content.size;
+        }
+
+        entry.time = requestInfo[params.requestId].failime * 1000 - requestInfo[params.requestId].requestTime * 1000;
+        entry.timings.receive = requestInfo[params.requestId].failTime * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
+
+        if (params.errorText)
+            console.log('failed reason: ' + params.requestId + ' ' + params.errorText);
+
+        if (params.canceled)
+            console.log('is canceled by users');
+
+        if (params.blockedReason)
+            console.log(params.blockedReason);
+
+    }
 }
 
 function sendLogsToServer(tabId) {
