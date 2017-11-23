@@ -571,26 +571,31 @@ function updateHarFailReason(params) {
         var idx = entries[params.requestId] - 1;
         var entry = logs[requestInfo[params.requestId].tabId].log.entries[idx];
 
-        entry._failReason = params.errorText + '-' + params.cancel;
+        entry._failReason = '';
 
         if (requestInfo[params.requestId].totalDataLength) {
             entry.response.content.size = parseInt(requestInfo[params.requestId].totalDataLength/requestInfo[params.requestId].noReq, 10);
             entry.response.bodySize = entry.response.content.size;
         }
 
-       entry.time = requestInfo[params.requestId].failime * 1000 - requestInfo[params.requestId].requestTime * 1000;
+
+        if (requestInfo[params.requestId].failTime)
+            entry.time = requestInfo[params.requestId].failTime * 1000 - requestInfo[params.requestId].requestTime * 1000;
 
         entry.timings.receive = requestInfo[params.requestId].failTime * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
 
-        if (params.errorText)
+        if (params.errorText) {
+            entry._failReason += params.errorText;
             console.log('failed reason: ' + params.requestId + ' ' + params.errorText);
-
-        if (params.canceled)
+        }
+        if (params.canceled) {
+            entry._failReason += params.canceled;
             console.log('is canceled by users');
-
-        if (params.blockedReason)
+        }
+        if (params.blockedReason) {
+            entry._failReason += params.canceled;
             console.log(params.blockedReason);
-
+        }
     }
 }
 
