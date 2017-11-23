@@ -81,7 +81,7 @@ function createPageOnUpdate(tabId) {
 
     logs[tabId].log.pages.push(
         {
-            startedDateTime: null,
+            startedDateTime: 0,
             id: 'page_' + pageLen,
             title: currentTabs[tabId].url,
             pageTimings: {
@@ -103,7 +103,7 @@ function createPageOnReload(tabId) {
 
     logs[tabId].log.pages.push(
         {
-            startedDateTime: null,
+            startedDateTime: 0,
             id: 'page_' + pageLen,
             title: currentTabs[tabId].url,
             pageTimings: {
@@ -578,7 +578,8 @@ function updateHarFailReason(params) {
             entry.response.bodySize = entry.response.content.size;
         }
 
-        entry.time = requestInfo[params.requestId].failime * 1000 - requestInfo[params.requestId].requestTime * 1000;
+       entry.time = requestInfo[params.requestId].failime * 1000 - requestInfo[params.requestId].requestTime * 1000;
+
         entry.timings.receive = requestInfo[params.requestId].failTime * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
 
         if (params.errorText)
@@ -591,6 +592,23 @@ function updateHarFailReason(params) {
             console.log(params.blockedReason);
 
     }
+}
+
+function blockRequest(debuggeeId, params) {
+    var pageLen = logs[debuggeeId.tabId].log.pages.length;
+    var page = logs[debuggeeId.tabId].log.pages[pageLen - 1];
+
+    if (!page && (!requestInfo[params.requestId].url.indexOf('chrome-extension')
+            || !requestInfo[params.requestId].url))
+        return true;
+
+    if (page) {
+        if (!page.startedDateTime && (!requestInfo[params.requestId].url.indexOf('chrome-extension')
+                || !requestInfo[params.requestId].url))
+            return true;
+    }
+
+    return false;
 }
 
 function sendLogsToServer(tabId) {

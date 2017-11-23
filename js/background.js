@@ -115,10 +115,7 @@ function onEvent(debuggeeId, message, params) {
 
         updateRequestSent(params);
 
-        var pageLen = logs[debuggeeId.tabId].log.pages.length;
-        var page = logs[debuggeeId.tabId].log.pages[pageLen - 1];
-
-        if ((!requestInfo[params.requestId].url.indexOf('chrome-extension')) && !page && !page.startedDateTime)
+        if (blockRequest(debuggeeId, params))
             return;
 
         updateEntryRequest(params.requestId);
@@ -159,10 +156,7 @@ function onEvent(debuggeeId, message, params) {
         //appendResponse(params.requestId, params.response);
         updateResponseRcv(params);
 
-        var pageLen = logs[debuggeeId.tabId].log.pages.length;
-        var page = logs[debuggeeId.tabId].log.pages[pageLen - 1];
-
-        if (!requestInfo[params.requestId].url.indexOf('chrome-extension') && !page && !page.startedDateTime)
+        if (blockRequest(debuggeeId, params))
             return;
 
         updateEntryResponse(params, params.requestId);
@@ -199,7 +193,7 @@ function onEvent(debuggeeId, message, params) {
         }
 
         updateFailReason(params);
-        //updateHarFailReason(params);
+        updateHarFailReason(params);
         uploadHarLog(params.requestId);
 
     }
