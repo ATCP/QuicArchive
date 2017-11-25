@@ -37,11 +37,12 @@ function bootstrap(tabs) {
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Page.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "DOM.enable");
             chrome.debugger.sendCommand({tabId: tabs[i].id}, "Network.setCacheDisabled", {cacheDisabled: true});
-
+            //chrome.debugger.sendCommand({tabId: tabs[i].id}, "");
 
             chrome.debugger.onEvent.addListener(onEvent);
 
             createPageOnBoot(tabs[i].id, tabs[i].windowId + '-' + tabs[i].id);
+            initLoadedPages(tabs[i].id);
 
         }
     }
@@ -82,10 +83,9 @@ function onEvent(debuggeeId, message, params) {
 
         var requestDiv = requests[params.requestId];
 
-
         if (!requestDiv ) {
-            /*no chrome extension*/
 
+            /*no chrome extension*/
             requests[params.requestId] = params.requestId;
 
             //var requestDiv = document.createElement("div");
@@ -169,6 +169,7 @@ function onEvent(debuggeeId, message, params) {
         }
 
         updateDataRcv(params);
+        updateHarDataRcv(params);
     }
     else if (message == "Network.loadingFinished") {
         if (!requestInfo[params.requestId]) {

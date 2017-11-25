@@ -46,7 +46,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "Page.enable");
                 chrome.debugger.sendCommand({tabId: tabId}, "DOM.enable");
-                chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
+                //chrome.debugger.sendCommand({tabId: tabId}, "Network.setCacheDisabled", {cacheDisabled: true});
                 //chrome.debugger.sendCommand({tabId: tabId}, "Network.emulateNetworkConditions", {offline: false, latency: 1000, downloadThroughput: -1, uploadThroughput: -1});
                 chrome.debugger.onEvent.addListener(onEvent);
 
@@ -87,7 +87,7 @@ chrome.tabs.onCreated.addListener(function (tab) {
         chrome.debugger.sendCommand({tabId: tab.id}, "Page.enable");
         chrome.debugger.sendCommand({tabId: tab.id}, "DOM.enable");
 
-        chrome.debugger.sendCommand({tabId: tab.id}, "Network.setCacheDisabled", {cacheDisabled: true});
+        //chrome.debugger.sendCommand({tabId: tab.id}, "Network.setCacheDisabled", {cacheDisabled: true});
 
         chrome.debugger.onEvent.addListener(onEvent);
 

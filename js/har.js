@@ -75,6 +75,69 @@ function createPageOnBoot(id, name) {
 
 }
 
+
+function getGeolocation(tabId) {
+    var pageLen = logs[tabId].log.pages.length;
+    var page = logs[tabId].log.pages[pageLen - 1];
+
+    if (!page)
+        return;
+
+    var geoLocate = new GeoLocation();
+    geoLocate.fetch({
+        success: function () {
+            setBadgeText(geoLocate.get('country_code') ? geoLocate.get('country_code') : 'ERR');
+            page._geolocation.ip = geoLocate.get('ip');
+
+            page._geolocation.country = geoLocate.get('country_name');
+            page._geolocation.city = geoLocate.get('city');
+
+        },
+        error: function () {
+            setBadgeText('ERR');
+        },
+        timeout: 2800
+    });
+
+
+}
+
+function initLoadedPages(tabId) {
+
+    logs[tabId].log.pages.push(
+        {
+            startedDateTime: 0,
+            id: 'page_' + 0,
+            title: currentTabs[tabId].url,
+            pageTimings: {
+                onContentLoad: -1,
+                onLoad: -1
+            },
+
+            _startTime: 0,
+            _entries: 0,
+            _tabs: 0,
+            _mem: 0,
+            _closeDateTime: 0,
+            _geolocation: {
+                ip: null,
+                country: null,
+                city: null
+            }
+
+        }
+    );
+
+    chrome.tabs.query({}, function(tabs) {
+        logs[tabId].log.pages[0]._tabs = tabs.length;
+    });
+
+    getGeolocation(tabId);
+
+}
+
+
+
 function createPageOnUpdate(tabId) {
 
     var pageLen = logs[tabId].log.pages.length;
@@ -88,11 +151,27 @@ function createPageOnUpdate(tabId) {
                 onContentLoad: -1,
                 onLoad: -1
             },
+
             _startTime: 0,
-            _entries: 0
+            _entries: 0,
+            _tabs: 0,
+            _mem: 0,
+            _closeDateTime: 0,
+            _geolocation: {
+                ip: null,
+                country: null,
+                city: null
+            }
 
         }
     );
+
+    var idx = pageLen;
+    chrome.tabs.query({}, function(tabs) {
+        logs[tabId].log.pages[idx]._tabs = tabs.length;
+    });
+
+    getGeolocation(tabId);
 
 }
 
@@ -111,16 +190,30 @@ function createPageOnReload(tabId) {
                 onLoad: -1
             },
             _startTime: 0,
-            _entries: 0
+            _entries: 0,
+            _tabs: tabs,
+            _mem: 0,
+            _closeDateTime: 0,
+            _geolocation: {
+                ip: null,
+                country: null,
+                city: null
+            }
         }
     );
 
+    var idx = pageLen;
+
+    chrome.tabs.query({}, function(tabs) {
+        logs[tabId].log.pages[idx]._tabs = tabs.length;
+    });
+
+    getGeolocation(tabId);
 }
 
 function updateEntryRequest(requestId) {
 
     var pageLen = logs[requestInfo[requestId].tabId].log.pages.length;
-
     var page = logs[requestInfo[requestId].tabId].log.pages[pageLen - 1];
 
     if (!page)
@@ -131,7 +224,7 @@ function updateEntryRequest(requestId) {
 
         var entry = {
             pageref: page.id,
-            startedDateTime: (new Date(requestInfo[requestId].requestTime * 1000)).toISOString(),
+            startedDateTime: (new Date()).toISOString(),
             time: 0,
             request: {
                 method: requestInfo[requestId].method,
@@ -171,13 +264,14 @@ function updateEntryRequest(requestId) {
             serverIPAddress: '',
             connection: '',
             _id: requestId,
-            _failReason: null
+            _failReason: 'timeout',
+            _startTIme: requestInfo[requestId].requestTime
         };
 
 
         logs[requestInfo[requestId].tabId].log.entries.push(entry);
 
-        if (!page.pageTimings.onLoad)
+        if (page.pageTimings.onLoad == -1)
             page._entries ++;
 
         var len = logs[requestInfo[requestId].tabId].log.entries.length;
@@ -198,9 +292,7 @@ function updateEntryRequest(requestId) {
 
     if (!page.startedDateTime) { // for the first entry of this page, it must have the same url as the page
 
-
         if (page.title.indexOf(entry.request.url) != 0) {
-
 
             var idx = entries[requestId] - 1;
             var found = false;
@@ -208,7 +300,7 @@ function updateEntryRequest(requestId) {
                 var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
                 if (page.title.indexOf(entry.request.url) == 0) {
                     page.startedDateTime = entry.startedDateTime;
-                    page._startTime = Date.parse(page.startedDateTime)/1000;
+                    page._startTime = entry._startTIme;
                     entry.pageref = page.id;
 
                     console.log(entry.pageref + ' ' + page.title + ' ' + entry.request.url);
@@ -220,7 +312,6 @@ function updateEntryRequest(requestId) {
                     found = true;
 
                     break;
-                } else {
 
                 }
             }
@@ -231,16 +322,19 @@ function updateEntryRequest(requestId) {
             }
         }
         else {
-            page.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
+            page.startedDateTime = entry.startedDateTime;
             page._startTime = requestInfo[requestId].requestTime;
 
             if (entry.pageref != page.id)
                 entry.pageref = page.id
         }
+
+        if (pageLen > 1)
+            logs[requestInfo[requestId].tabId].log.pages[pageLen-2]._closeDateTime = page.startedDateTime;
     }
     else {
         if (page._startTime > requestInfo[requestId].requestTime) {
-            page.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
+            page.startedDateTime = entry.startedDateTime;
             page._startTime = requestInfo[requestId].requestTime;
         }
     }
@@ -336,7 +430,7 @@ function updateEntryResponse(params, requestId) {
 
         var entry = {
             pageref: page.id,
-            startedDateTime: (new Date(resourceTime[requestId].requestTime * 1000)).toISOString(),
+            startedDateTime: (new Date()).toISOString(),
             time: 0,
             request: {
                 method: 'GET',
@@ -376,15 +470,12 @@ function updateEntryResponse(params, requestId) {
             serverIPAddress: '',
             connection: '',
             _id: requestId,
-            _failReason: null
+            _failReason: 'timeout',
+            _startTime: requestInfo[requestId].requestTime
         };
 
         entry.request.httpVersion = requestInfo[requestId].proto;
         entry.request.url = params.response.url;
-
-        if (!resourceTime[requestId].requestTime) {
-            entry.startedDateTime = (new Date(requestInfo[requestId].requestTime * 1000)).toISOString();
-        }
 
 
         if (requestInfo[params.requestId].requestHeaders) {
@@ -456,7 +547,7 @@ function updateEntryResponse(params, requestId) {
 
         logs[requestInfo[requestId].tabId].log.entries.push(entry);
 
-        if (!page.pageTimings.onLoad)
+        if (page.pageTimings.onLoad == -1)
             page._entries ++;
 
         var len = logs[requestInfo[requestId].tabId].log.entries.length;
@@ -477,6 +568,9 @@ function updateEntryResponse(params, requestId) {
             page.startedDateTime = entry.startedDateTime;
             page._startTime = resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime;
         }
+
+        if (pageLen > 1)
+            logs[tabId].log.pages[pageLen-2]._closeDateTime = page.startedDateTime;
     }
     else {
         if (page._startTime > (resourceTime[requestId].requestTime ? resourceTime[requestId].requestTime : requestInfo[requestId].requestTime)) {
@@ -495,6 +589,8 @@ function updateEntryLoad(requestId) {
         var idx = entries[requestId] - 1;
         var entry = logs[requestInfo[requestId].tabId].log.entries[idx];
 
+        entry._failReason = 'successful';
+
         if (resourceTime[requestId].requestTime && resourceTime[requestId].requestTime < requestInfo[requestId].requestTime) {
             entry.time = requestInfo[requestId].loadingTime * 1000 - resourceTime[requestId].requestTime * 1000;
             entry.timings.receive = requestInfo[requestId].loadingTime * 1000 - (resourceTime[requestId].receiveHeadersEnd + resourceTime[requestId].requestTime * 1000);
@@ -506,12 +602,16 @@ function updateEntryLoad(requestId) {
 
         if (requestInfo[requestId].encodedDataBytesFinLoad) {
             entry.response._transferSize = requestInfo[requestId].encodedDataBytesFinLoad;
-
         }
+        else
+            entry.response._transferSize = 0;
 
         if (requestInfo[requestId].totalDataLength) {
             entry.response.content.size = parseInt(requestInfo[requestId].totalDataLength/requestInfo[requestId].noReq, 10);
             entry.response.bodySize = entry.response.content.size;
+
+        } else {
+            entry.response.content.size = entry.response.bodySize = 0;
 
         }
 
@@ -546,7 +646,6 @@ function updateEntryLoad(requestId) {
 
 function updatePageLoadTime(tabId, timestamp) {
     var pageLen = logs[tabId].log.pages.length;
-
     var page = logs[tabId].log.pages[pageLen-1];
 
     if (!page)
@@ -557,7 +656,6 @@ function updatePageLoadTime(tabId, timestamp) {
 
 function updatePageDomLoadTime(tabId, timestamp) {
     var pageLen = logs[tabId].log.pages.length;
-
     var page = logs[tabId].log.pages[pageLen-1];
 
     if (!page)
@@ -571,31 +669,58 @@ function updateHarFailReason(params) {
         var idx = entries[params.requestId] - 1;
         var entry = logs[requestInfo[params.requestId].tabId].log.entries[idx];
 
-        entry._failReason = '';
+        entry._failReason = 'failed-';
 
         if (requestInfo[params.requestId].totalDataLength) {
             entry.response.content.size = parseInt(requestInfo[params.requestId].totalDataLength/requestInfo[params.requestId].noReq, 10);
             entry.response.bodySize = entry.response.content.size;
         }
+        else {
+            entry.response.content.size = 0;
+            entry.response.bodySize = 0;
+        }
 
 
-        if (requestInfo[params.requestId].failTime)
+        if (requestInfo[params.requestId].failTime) {
             entry.time = requestInfo[params.requestId].failTime * 1000 - requestInfo[params.requestId].requestTime * 1000;
 
-        entry.timings.receive = requestInfo[params.requestId].failTime * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
+            entry.timings.receive = requestInfo[params.requestId].failTime * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
+        }
 
         if (params.errorText) {
             entry._failReason += params.errorText;
-            console.log('failed reason: ' + params.requestId + ' ' + params.errorText);
+            console.log('failed reason: ' + idx + ' ' + params.requestId + ' ' + params.errorText);
         }
         if (params.canceled) {
             entry._failReason += params.canceled;
-            console.log('is canceled by users');
+            console.log('is canceled by users ' + idx);
         }
         if (params.blockedReason) {
             entry._failReason += params.canceled;
-            console.log(params.blockedReason);
+            console.log(params.blockedReason + '  '+ idx);
         }
+    }
+}
+
+function updateHarDataRcv(params) {
+    if (entries[params.requestId]) {
+        var idx = entries[params.requestId] - 1;
+        var entry = logs[requestInfo[params.requestId].tabId].log.entries[idx];
+
+        if (requestInfo[params.requestId].totalDataLength) {
+            entry.response.content.size = parseInt(requestInfo[params.requestId].totalDataLength/requestInfo[params.requestId].noReq, 10);
+            entry.response.bodySize = entry.response.content.size;
+        }
+        else {
+            entry.response.content.size = 0;
+            entry.response.bodySize = 0;
+        }
+
+        if (params.timestamp) {
+            entry.time = params.timestamp * 1000 - requestInfo[params.requestId].requestTime * 1000;
+            entry.timings.receive = params.timestamp * 1000 - (resourceTime[params.requestId].receiveHeadersEnd + requestInfo[params.requestId].requestTime * 1000);
+        }
+
     }
 }
 
@@ -623,6 +748,9 @@ function sendLogsToServer(tabId) {
             logs[tabId] = null;
             return;
         }
+
+        var idx = logs[tabId].log.pages.length - 1;
+        logs[tabId].log.pages[idx]._closeDateTime = new Date().toISOString();
 
         var send = function (message, callback) {
             waitForConnection(function () {
