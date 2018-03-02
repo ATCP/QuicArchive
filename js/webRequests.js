@@ -4,6 +4,8 @@ var socket;
 function connect() {
     socket = new WebSocket('ws://128.46.202.232:1337');
 
+    //socket = new WebSocket('ws://127.0.0.1:1337');
+
     socket.onopen = function (event) {
         console.log((new Date()) + " connected to server\n");
     };
@@ -30,7 +32,7 @@ function connect() {
 
 var filter = {
     //urls: ["<all_urls>"]
-    urls: ["*://www.1.com/*"]
+    urls: ["http://*/*"]
     //types: [ "main_frame", "sub_frame", "stylesheet", "script", "image", "object", "xmlhttprequest", "other"]
 };
 
@@ -38,36 +40,44 @@ var count = {};
 
 chrome.webRequest.onBeforeRequest.addListener(function(details) {
 
+
     var requestId = details.requestId;
-    var block = false;
+    var url = details.url;
 
-    if (count[requestId] == undefined)
-        count[requestId] = 0;
 
-    count[requestId] ++;
-
-    if (count[requestId] < 1) {
-        block = true;
-    }
-
-    console.log(details.url);
     return {cancel: block};
 
     }, filter, ["blocking", "requestBody"]);
 
 chrome.webRequest.onBeforeSendHeaders.addListener(function(details){
 
+
     for (var i = 0; i < details.requestHeaders.length; ++i) {
-        if (details.requestHeaders[i].name == 'User-Agent') {
-            details.requestHeaders[i].value = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko)';
+
+        if (details.requestHeaders[i].name.toLowerCase() == 'user-agent') {
+            //details.requestHeaders[i].value = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko)';
         }
-        else if (details.requestHeaders[i].name == 'Cookie') {
-            etails.requestHeaders[i].value = '';
+        else if (details.requestHeaders[i].name.toLowerCase() == 'cookie') {
+            //details.requestHeaders[i].value = '';
+        }
+        else if (details.requestHeaders[i].name.toLowerCase() == 'upgrade-insecure-requests') {
+            details.requestHeaders.splice(i, 1);
+
+        }
+        else if (details.requestHeaders[i].name.toLowerCase() == 'http2-settings') {
+            details.requestHeaders.splice(i, 1);
+        }
+        else if (details.requestHeaders[i].name.toLowerCase() == 'upgrade') {
+            details.requestHeaders.splice(i, 1);
+        }
+        else if (details.requestHeaders[i].name.toLowerCase() == 'connection') {
+            details.requestHeaders[i].value = 'keep-alive';
+
         }
 
     }
 
-    //details.requestHeaders.push({name: "Upgrade", value: "websocket"});
+
 
     return {requestHeaders: details.requestHeaders};
 }, filter, ["blocking", "requestHeaders"]);
@@ -77,16 +87,16 @@ var block = false;
 chrome.webRequest.onHeadersReceived.addListener(function (details) {
 
     for (var i = 0; i < details.responseHeaders.length; ++i) {
-        if (details.responseHeaders[i].name == 'alt-svc') {
+        if (toLowerCase(details.responseHeaders[i].name) == 'alt-svc') {
             details.responseHeaders[i].value = '';
 
-        } else if (details.responseHeaders[i].name == 'client-protocol') {
+        } else if (toLowerCase(details.responseHeaders[i].name) == 'client-protocol') {
             details.responseHeaders[i].value = '';
         }
 
     }
 
-    //return {responseHeaders: details.responseHeaders};
-    return {cancel: block};
+    return {responseHeaders: details.responseHeaders};
+    //return {cancel: block};
 
 }, filter, ["blocking", "responseHeaders"]);
